@@ -1,0 +1,4 @@
+pippo 1
+pluto 0
+paperino 0
+isfet 0
