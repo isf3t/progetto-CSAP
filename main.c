@@ -12,6 +12,39 @@ struct sockaddr_in serverAddr;
 char buffer[1024];
 #define PORT 4446
 
+void list(char* service){
+    
+    bzero(buffer, sizeof(buffer));
+    
+    if (service == "message") {
+        strcpy(buffer,"listM: ");
+        send(clientSocket, buffer, strlen(buffer), 0);
+        
+        bzero(buffer, sizeof(buffer));
+        
+        int res = recv(clientSocket, buffer, 1024, 0);
+        
+        if (res <0){
+            printf("Error comunicating with server\n");
+            exit(1);
+        }
+        
+        printf("Ho ricevuto: %s\n", buffer);
+    
+    }
+    
+    if (service == "topic") {
+        strcpy(buffer,"listT: ");
+        send(clientSocket, buffer, strlen(buffer), 0);
+    }
+    
+    if (service == "thread") {
+        strcpy(buffer,"listTH: ");
+        send(clientSocket, buffer, strlen(buffer), 0);
+    }
+    
+}
+
 
 void authenticate(){
     
@@ -20,16 +53,16 @@ void authenticate(){
     
     bzero(str, sizeof(str));
         
-    printf("buffer: %s\n", buffer);
-    printf("str: %s\n", str);
+//     printf("buffer: %s\n", buffer);
+//     printf("str: %s\n", str);
         
     printf("Username: \t");
     scanf("%s", &str[0]);
         
-    printf("%s\t%s\n", buffer, str);
+//     printf("%s\t%s\n", buffer, str);
     strcat(buffer, str);
          
-    printf("stringa concatenata: %s\n", buffer);
+//     printf("stringa concatenata: %s\n", buffer);
         
     send(clientSocket, buffer, strlen(buffer), 0);
     
@@ -65,10 +98,6 @@ void authenticate(){
 }
 
 int connectToServer(){
-    
-//     int clientSocket, ret;
-// 	struct sockaddr_in serverAddr;
-// 	char buffer[1024];
 
 	clientSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if(clientSocket < 0){
@@ -103,19 +132,22 @@ int main(int argc, char* argv[]){
     char* messageCODE;
     char messageBODY[140];
     
-    if (argv[1] == NULL) printf("\nUSAGE: {authenticate | list [ message | topic] | get [message#] | status [message#] | create [topic] | append [topic -> thread] | delete [topic]}\n");
+    printf("argv %d\n", argv[2] == "");
+    
+    if (argv[1] == NULL) printf("\nUSAGE: {authenticate | list [ threads | topics|  messages ] | get [message#] | status [message#] | create [topic] | append [topic -> thread] | delete [topic]}\n");
     else{
         if (strcmp(cmd, "authenticate") == 0) serviceToCall = 1;
         if (strcmp(cmd, "list") == 0) {
-            if (argv[2] == NULL) printf("\nUSAGE: ./main list [message|topic]\n");
-            else if(argv[2] == "message") serviceToCall = 2;
-            else if (argv[2] == "topic") serviceToCall = 3;
+            if (argv[2] == NULL) printf("\nUSAGE: ./main list list [ threads | topics|  messages ]\n");
+            else if(strcmp(argv[2], "messages") == 0) serviceToCall = 2;
+            else if (strcmp(argv[2], "topics") == 0) serviceToCall = 3;
+            else if (strcmp(argv[2], "threads") == 0) serviceToCall = 4;
         }
         
         if (strcmp(cmd, "get") == 0) {
             if (argv[2] == NULL) printf("\nUSAGE: ./main get [message#]\n");
             else{
-                serviceToCall = 4;
+                serviceToCall = 5;
                 messageCODE = argv[2];
             }
         }
@@ -123,32 +155,34 @@ int main(int argc, char* argv[]){
         if (strcmp(cmd, "status") == 0){
             if (argv[2] == NULL) printf("\nUSAGE: ./main status [message#]\n");
             else{
-                serviceToCall = 5;
+                serviceToCall = 6;
             }
         }
         
         if (strcmp(cmd, "create") == 0){
             if (argv[2] == NULL) printf("\nUSAGE: ./main create [topic]\n");
             else{
-                serviceToCall = 6;
+                serviceToCall = 7;
             }
         }
         
         if (strcmp(cmd, "append") == 0){
             if (argv[2] == NULL) printf("\nUSAGE: ./main append [topic] [thread]\n");
             else{
-                serviceToCall = 7;
+                serviceToCall = 8;
             }
         }
         
         if (strcmp(cmd, "delete") == 0){
             if (argv[2] == NULL) printf("\nUSAGE: ./main delete [topic]\n");
             else{
-                serviceToCall = 8;
+                serviceToCall = 9;
             }
         }
         
     }
+    
+    printf("service to call %d\n", serviceToCall);
     
     switch(serviceToCall){
         
@@ -156,13 +190,16 @@ int main(int argc, char* argv[]){
             if (connectToServer() > 0) authenticate();
             break;
         case 2:
-            printf("servizio %d\n", serviceToCall);
+            printf("service to call %d\n", serviceToCall);
+            if (connectToServer() > 0) list("message");
             break;
         case 3:
-            printf("servizio %d\n", serviceToCall);
+            printf("service to call %d\n", serviceToCall);
+            if (connectToServer() > 0) list("topic");
             break;
         case 4:
-            printf("servizio %d\n, messaggio %s", serviceToCall, messageCODE);
+            printf("service to call %d\n", serviceToCall);
+            if (connectToServer() > 0) list("thread");
             break;
         case 5:
             printf("servizio %d\n", serviceToCall);

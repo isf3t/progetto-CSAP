@@ -3,7 +3,8 @@
 #include <string.h>
 #include <sys/sem.h>
 #include <sys/types.h>     
-#include <sys/ipc.h>     
+#include <sys/ipc.h>
+#include <sys/shm.h> 
 #include "utility.h"
 
 #define MAXCHAR 1000
@@ -49,16 +50,24 @@ int authenticatedUser(char* buffer) {
 
 int sem_init(key_t key){
     
-    int semid;         
+    int semid; 
+    union semun  {
+        int val;
+        struct semid_ds *buf;
+        ushort *array;
+    } arg;
+
+
     
-    /* create a semaphore set with 1 semaphore: */         
+    /* create a semaphore set with NSEMS semaphore: */         
     if ((semid = semget(key, 1, 0666 | IPC_CREAT)) == -1) {             
         perror("semget");             
         return -1;
     }         
-    /* initialize semaphore #0 to 1: */         
+    /* initialize all semaphore to 1: */   
+    arg.val = 1;
     for (int i = 0; i<NSEMS; i++){
-        if (semctl(semid, i, SETVAL, 1) == -1) {             
+        if (semctl(semid, i, SETVAL, arg) == -1) {             
             perror("semctl");             
             return -1;
         } 

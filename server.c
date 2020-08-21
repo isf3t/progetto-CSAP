@@ -8,16 +8,24 @@
 #include <arpa/inet.h>
 #include <sys/ipc.h>     
 #include <sys/sem.h>
+#include <sys/shm.h> 
 #include "utility.h"
+#include "data_structure.h"
 
 #define PORT 4446
 
+// SHMIDS FOR PROCESS
+int shmidTOPIC;
+int shmidTHREAD;
+int shmidMESSAGE;
+
 int main(){
     
-    key_t key = ftok("users.txt", 'E'); 
+    key_t key_shm = ftok("users.txt", 'E'); 
+    key_t key_sem = ftok("users.txt", 'J'); 
 
 	int sockfd, ret;
-	 struct sockaddr_in serverAddr;
+    struct sockaddr_in serverAddr;
 
 	int newSocket;
 	struct sockaddr_in newAddr;
@@ -27,8 +35,24 @@ int main(){
 	char buffer[1024];
 	pid_t childpid;
     
-    if (sem_init(key) < 0) printf("Error creating semaphore set!\n");
-
+    Topic* topics;
+    Thread* threads;
+    Message* messages;
+    
+    // SHMEM INIT
+    shmidTOPIC = shmget(key_shm, 1 * sizeof(Topic), IPC_CREAT | 0666);
+//     topics = (Topic *) shmat(shmidTOPIC, NULL, 0);
+    
+    shmidTHREAD = shmget(key_shm, 1 * sizeof(Thread), IPC_CREAT | 0666);
+//     threads = (Thread *) shmat(shmidTHREAD, NULL, 0);
+    
+    shmidMESSAGE = shmget(key_shm, 1 * sizeof(Message), IPC_CREAT | 0666);
+//     messages = (Message *) shmat(shmidMESSAGE, NULL, 0);
+    
+    // INIT OF SYSV SEMAPHORE
+    if (sem_init(key_sem) < 0) printf("Error creating semaphore set!\n");
+    
+    // SERVER SOCKET INIT
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if(sockfd < 0){
 		printf("[-]Error in connection.\n");
@@ -54,7 +78,7 @@ int main(){
 		printf("[-]Error in binding.\n");
 	}
 
-
+    // MULTIPROCESS CONNECTION
 	while(1){
 		newSocket = accept(sockfd, (struct sockaddr*)&newAddr, &addr_size);
 		if(newSocket < 0){
@@ -115,6 +139,21 @@ int main(){
                     printf("Ho inviato al client %s\n", buffer);
                     
                     bzero(buffer, sizeof(buffer));
+                }
+                
+                if (strcmp(operation, "listM") == 0){
+                    strcpy(buffer, "Hai richiesto la lista dei messaggi\n");
+                    send(newSocket, buffer, strlen(buffer), 0);
+                }
+                
+                if (strcmp(operation, "listT") == 0){
+                    strcpy(buffer, "Hai richiesto la lista dei messaggi\n");
+                    send(newSocket, buffer, strlen(buffer), 0);
+                }
+                
+                if (strcmp(operation, "listTH") == 0){
+                    strcpy(buffer, "Hai richiesto la lista dei messaggi\n");
+                    send(newSocket, buffer, strlen(buffer), 0);
                 }
                 
 //                 printf("Client: %s\n", buffer);
