@@ -12,7 +12,7 @@
 #include "utility.h"
 #include "data_structure.h"
 
-#define PORT 4446
+#define PORT 4444
 
 // SHMIDS FOR PROCESS
 int shmidTOPIC;
@@ -40,14 +40,14 @@ int main(){
     Message* messages;
     
     // SHMEM INIT
-    shmidTOPIC = shmget(key_shm, 1 * sizeof(Topic), IPC_CREAT | 0666);
-//     topics = (Topic *) shmat(shmidTOPIC, NULL, 0);
+    shmidTOPIC = shmget(IPC_PRIVATE, 1 * sizeof(Topic), IPC_CREAT | 0666);
+//      topics = (Topic *) shmat(shmidTOPIC, NULL, 0);
     
-    shmidTHREAD = shmget(key_shm, 1 * sizeof(Thread), IPC_CREAT | 0666);
-//     threads = (Thread *) shmat(shmidTHREAD, NULL, 0);
+    shmidTHREAD = shmget(IPC_PRIVATE, 1 * sizeof(Thread), IPC_CREAT | 0666);
+//      threads = (Thread *) shmat(shmidTHREAD, NULL, 0);
     
-    shmidMESSAGE = shmget(key_shm, 1 * sizeof(Message), IPC_CREAT | 0666);
-//     messages = (Message *) shmat(shmidMESSAGE, NULL, 0);
+    shmidMESSAGE = shmget(IPC_PRIVATE, 1 * sizeof(Message), IPC_CREAT | 0666);
+//      messages = (Message *) shmat(shmidMESSAGE, NULL, 0);
     
     // INIT OF SYSV SEMAPHORE
     if (sem_init(key_sem) < 0) printf("Error creating semaphore set!\n");
@@ -100,25 +100,27 @@ int main(){
                 int i = 0;
                 char* token = strtok(buffer, ":");
                 char operation[1024];
-                char username[1024];
+                char payload[1024];
                 
-                while (token != NULL){
-                    if (i == 1) {
-                        strcpy(username, token);
-                        break;
+                printf("OPERAZIONE %s\n", operation);
+                
+                 while (token != NULL){
+                        if (i == 1) {
+                            strcpy(payload, token);
+                            break;
+                        }
+                        else if (i == 0){
+                            strcpy(operation, token);
+                            token = strtok(NULL, ":");
+                            i++;
+                        }
                     }
-                    else if (i == 0){
-                        strcpy(operation, token);
-                        token = strtok(NULL, ":");
-                        i++;
-                    }
-                }
                 
                 if (strcmp(operation, "username") == 0){
                     
-                    printf("Cerco di autenticare...%s\n", username);
+                    printf("Cerco di autenticare...%s\n", payload);
                 
-                    int res = authenticatedUser(username);
+                    int res = authenticatedUser(payload);
                 
                     if (res == 1) {
                         bzero(buffer, sizeof(buffer));
@@ -136,24 +138,59 @@ int main(){
                         send(newSocket, buffer, strlen(buffer), 0);
                     }
                     
-                    printf("Ho inviato al client %s\n", buffer);
+//                     printf("Ho inviato al client %s\n", buffer);
                     
                     bzero(buffer, sizeof(buffer));
                 }
                 
                 if (strcmp(operation, "listM") == 0){
+                    
+                    int i = 0;
+                    char* values = strtok(payload, ",");
+                    char threadName[50];
+                    char topicName[50];
+                    
+                    bzero(buffer, sizeof(buffer));
+                    
+                    while (payload != NULL){
+                        
+                        if (i == 1) {
+                            strcpy(topicName, values);
+                            break;
+                        }
+                        if (i == 0){
+                            strcpy(threadName, values);
+                            values = strtok(NULL, ",");
+                            i++;
+                        }
+                    }
+                    
+                    printf("ricevuto thread %s, topic %s\n", threadName, topicName);
                     strcpy(buffer, "Hai richiesto la lista dei messaggi\n");
                     send(newSocket, buffer, strlen(buffer), 0);
                 }
                 
                 if (strcmp(operation, "listT") == 0){
-                    strcpy(buffer, "Hai richiesto la lista dei messaggi\n");
+                    
+                    bzero(buffer, sizeof(buffer));
+                    
+                    printf("operazione richiesta %s\n", operation);
+                    strcpy(buffer, "Hai richiesto la lista dei topic\n");
                     send(newSocket, buffer, strlen(buffer), 0);
+                    
                 }
                 
                 if (strcmp(operation, "listTH") == 0){
-                    strcpy(buffer, "Hai richiesto la lista dei messaggi\n");
+
+                    bzero(buffer, sizeof(buffer));
+                    
+                    printf("operazione richiesta %s\n", operation);
+                    strcpy(buffer, "Hai richiesto la lista dei thread\n");
                     send(newSocket, buffer, strlen(buffer), 0);
+                }
+                
+                if (strcmp(operation, "replyTO") == 0){
+                    printf("richiesta di reply ricevuta");
                 }
                 
 //                 printf("Client: %s\n", buffer);

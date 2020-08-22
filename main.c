@@ -10,14 +10,38 @@
 int clientSocket, ret;
 struct sockaddr_in serverAddr;
 char buffer[1024];
-#define PORT 4446
+char threadName[50];
+char topicName[50];
+
+#define PORT 4444
+
+void reply(char* messageBody){
+
+    bzero(buffer, sizeof(buffer));
+    
+    strcpy(buffer,"replyTO:");
+    strcat(buffer, threadName);
+    strcat(buffer, ",");
+    strcat(buffer, topicName);
+    strcat(buffer, ",");
+    strcat(buffer, messageBody);
+    printf("stringa concatenata %s\n", buffer);
+    
+}
 
 void list(char* service){
     
     bzero(buffer, sizeof(buffer));
     
     if (service == "message") {
-        strcpy(buffer,"listM: ");
+        
+        // create a message to server in form "listM:threadname,topicname,message"
+        strcpy(buffer,"listM:");
+        strcat(buffer, threadName);
+        strcat(buffer, ",");
+        strcat(buffer, topicName);
+        printf("stringa concatenata %s\n", buffer);
+        
         send(clientSocket, buffer, strlen(buffer), 0);
         
         bzero(buffer, sizeof(buffer));
@@ -34,13 +58,42 @@ void list(char* service){
     }
     
     if (service == "topic") {
-        strcpy(buffer,"listT: ");
+        
+        // create a message to server in form "listM:threadname,topicname,message"
+        strcpy(buffer,"listT:");
+        strcat(buffer, threadName);
+        printf("stringa concatenata %s\n", buffer);
+        
         send(clientSocket, buffer, strlen(buffer), 0);
+        
+        bzero(buffer, sizeof(buffer));
+        
+        int res = recv(clientSocket, buffer, 1024, 0);
+        
+        if (res <0){
+            printf("Error comunicating with server\n");
+            exit(1);
+        }
+        
+        printf("Ho ricevuto: %s\n", buffer);
     }
     
     if (service == "thread") {
-        strcpy(buffer,"listTH: ");
+        
+        // create a message to server in form "listM:threadname,topicname,message"
+        strcpy(buffer,"listTH:");
         send(clientSocket, buffer, strlen(buffer), 0);
+        
+        bzero(buffer, sizeof(buffer));
+        
+        int res = recv(clientSocket, buffer, 1024, 0);
+        
+        if (res <0){
+            printf("Error comunicating with server\n");
+            exit(1);
+        }
+        
+        printf("Ho ricevuto: %s\n", buffer);
     }
     
 }
@@ -129,34 +182,50 @@ int main(int argc, char* argv[]){
     
     char* cmd = argv[1];
     int serviceToCall = 0;
-    char* messageCODE;
-    char messageBODY[140];
-    
-    printf("argv %d\n", argv[2] == "");
+    char messageBody[140];
+//     printf("argv1 %d, argv2 %d, argv3 %d, argv4 %d, \n", argv[1], argv[2], argv[3], argv[4]);
     
     if (argv[1] == NULL) printf("\nUSAGE: {authenticate | list [ threads | topics|  messages ] | get [message#] | status [message#] | create [topic] | append [topic -> thread] | delete [topic]}\n");
     else{
         if (strcmp(cmd, "authenticate") == 0) serviceToCall = 1;
         if (strcmp(cmd, "list") == 0) {
-            if (argv[2] == NULL) printf("\nUSAGE: ./main list list [ threads | topics|  messages ]\n");
-            else if(strcmp(argv[2], "messages") == 0) serviceToCall = 2;
-            else if (strcmp(argv[2], "topics") == 0) serviceToCall = 3;
+            if (argv[2] == NULL) printf("\nUSAGE: ./main list [ threads | topics (thread name + topic name)|  messages (thread name + topic name)]\n");
+            else if(strcmp(argv[2], "messages") == 0) {
+                if (argv[3] != NULL && argv[4] != NULL){
+                    serviceToCall = 2;
+                    strcpy(threadName, argv[3]);
+                    strcpy(topicName, argv[4]);
+                }
+                else{
+                    printf("\nUSAGE: ./main list messages (thread name + topic name)]\n");
+                }
+            }
+            else if (strcmp(argv[2], "topics") == 0) {
+            
+                if (argv[3] != NULL){
+                    serviceToCall = 3;
+                    strcpy(threadName, argv[3]);
+                }
+                else{
+                    printf("\nUSAGE: ./main list topics (thread name)]\n");
+                }
+                
+            }
             else if (strcmp(argv[2], "threads") == 0) serviceToCall = 4;
         }
         
-        if (strcmp(cmd, "get") == 0) {
-            if (argv[2] == NULL) printf("\nUSAGE: ./main get [message#]\n");
-            else{
-                serviceToCall = 5;
-                messageCODE = argv[2];
-            }
-        }
-        
-        if (strcmp(cmd, "status") == 0){
-            if (argv[2] == NULL) printf("\nUSAGE: ./main status [message#]\n");
-            else{
-                serviceToCall = 6;
-            }
+        if (strcmp(cmd, "reply")== 0) {
+            if (argc >= 5 && argv[3] != NULL && argv[4] != NULL && strlen(argv[4]) <= 140){
+                    
+                    serviceToCall = 5;
+                    strcpy(threadName, argv[2]);
+                    strcpy(topicName, argv[3]);
+                    strcpy(messageBody, argv[4]);
+                }
+                else{
+                    printf("%s, %s\n", argv[3], argv[4]);
+                    printf("\nUSAGE: ./main reply (thread name + topic name + message max 140)]\n");
+                }
         }
         
         if (strcmp(cmd, "create") == 0){
@@ -182,7 +251,7 @@ int main(int argc, char* argv[]){
         
     }
     
-    printf("service to call %d\n", serviceToCall);
+//     printf("service to call %d\n", serviceToCall);
     
     switch(serviceToCall){
         
@@ -203,6 +272,7 @@ int main(int argc, char* argv[]){
             break;
         case 5:
             printf("servizio %d\n", serviceToCall);
+            if (connectToServer() > 0) reply(messageBody);
             break;
         case 6:
             printf("servizio %d\n", serviceToCall);
