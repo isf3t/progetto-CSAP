@@ -18,6 +18,114 @@
 int shmidTOPIC;
 int shmidTHREAD;
 int shmidMESSAGE;
+char buffer[1024];
+
+void printMessageList(char* topicName){
+//     shmidMESSAGE = shmget(IPC_PRIVATE, 1 * sizeof(Message), IPC_CREAT | 0666);
+    Message* head = (Message *) shmat(shmidMESSAGE, NULL, 0);
+    
+    if (head == NULL) strcpy(buffer, "Nessun Messaggio Trovato!\n");
+    else{
+        strcpy(buffer, "Nessun Messaggio Trovato!\n");
+    }
+    
+    while(head != NULL){
+        
+        if (strcmp(head->upperTopic, topicName) == 0){
+            bzero(buffer, sizeof(buffer));
+            strcpy(buffer, "Related To Topic: \n");
+            strcat(buffer, head->upperTopic);
+            strcat(buffer, "\n");
+            strcat(buffer, "SRC: \n");
+            strcat(buffer, head->src);
+            strcat(buffer, "\n");
+            strcat(buffer, "Body: \n");
+            strcat(buffer, head->body);
+            strcat(buffer, "\n\n");
+        }
+        
+        else {
+        
+            head = head->next;
+            
+        }
+    }
+    
+}
+
+void printTopicList(Topic* head, char* threadName){
+    
+    if (head == NULL) strcpy(buffer, "Nessun Topic Trovato!\n");
+    else{
+        strcpy(buffer, "Nessun Topic Trovato!\n");
+    }
+    
+    while(head != NULL){
+        
+        if (strcmp(head->upperThread, threadName) == 0){
+            bzero(buffer, sizeof(buffer));
+            strcpy(buffer, "Related To Thread: \n");
+            strcat(buffer, head->upperThread);
+            strcat(buffer, "\n");
+            strcat(buffer, "Topic Name: \n");
+            strcat(buffer, head->name);
+            strcat(buffer, "\n\n");
+        }
+        
+        else {
+        
+            head = head->next;
+            
+        }
+    }
+    
+}
+
+// VARIANTE 1
+// void printTopicList(Thread* head, char* topicName, char* threadName){
+//     
+//     if (head == NULL) strcpy(buffer, "Nessun Thread Trovato\n");
+//     
+//     while(head != NULL){
+//         
+//         if (strcmp(head->name, threadName) == 0){
+//             
+//             if (head->topics == NULL) {
+//                 
+//                 strcat(buffer, "Nessun Topic Trovato\n");
+//                 break;
+//             }
+//             
+//             while(head->topics != NULL){
+//                 strcat(buffer, "Topic Name: \n");
+//                 strcat(buffer, head->topics->name);
+//                 strcat(buffer, "\n\n");
+//                 head->topics = head->topics->next;
+//             }
+//         }
+//         
+//     }    
+// }
+
+void printThreadList(Thread* head){
+    
+    if (head == NULL) strcpy(buffer, "Nessun Thread Trovato");
+    else{
+        strcpy(buffer, "Nessun Topic Trovato!\n");
+    }
+    
+    while(head != NULL){
+        bzero(buffer, sizeof(buffer));
+        strcat(buffer, "Thread Name: \n");
+        strcat(buffer, head->name);
+        strcat(buffer, "\n");
+        strcat(buffer, "Thread Owner: \n");
+        strcat(buffer, head->owner);
+        strcat(buffer, "\n\n");
+        head = head->next;
+        
+    }    
+}
 
 int main(){
     
@@ -32,7 +140,6 @@ int main(){
 
 	socklen_t addr_size;
 
-	char buffer[1024];
 	pid_t childpid;
     
     Topic* topics;
@@ -40,15 +147,41 @@ int main(){
     Message* messages;
     
     // SHMEM INIT
-    shmidTOPIC = shmget(IPC_PRIVATE, 1 * sizeof(Topic), IPC_CREAT | 0666);
-//      topics = (Topic *) shmat(shmidTOPIC, NULL, 0);
+    shmidMESSAGE = shmget(IPC_PRIVATE, 1 * sizeof(Message), IPC_CREAT | 0666);
+    messages = (Message *) shmat(shmidMESSAGE, NULL, 0);
+    Message* headM = NULL;
+    shmidMESSAGE = shmget(IPC_PRIVATE, 1 * sizeof(Thread), IPC_CREAT | 0666);
+    headM = (Message *) shmat(shmidMESSAGE, NULL, 0);
+    headM->next = NULL;
+    strcpy(headM->src, "admin");
+    strcpy(headM->upperTopic, "Welcome to this whiteboard written in C!");
+    strcpy(headM->body, "This is your first message of welcome!");
+    shmdt(headM);
+    printf("messaggio %d\n", shmidMESSAGE);
     
     shmidTHREAD = shmget(IPC_PRIVATE, 1 * sizeof(Thread), IPC_CREAT | 0666);
-//      threads = (Thread *) shmat(shmidTHREAD, NULL, 0);
+    threads = (Thread *) shmat(shmidTHREAD, NULL, 0);
+    Thread* headTH = NULL;
+    shmidTHREAD = shmget(IPC_PRIVATE, 1 * sizeof(Thread), IPC_CREAT | 0666);
+    headTH = (Thread *) shmat(shmidTHREAD, NULL, 0);
+    headTH->next = NULL;
+    strcpy(headTH->name, "Welcome!");
+    strcpy(headTH->owner, "admin");
+    shmdt(headTH);
+            printf("thread %d\n", shmidTHREAD);
+
     
-    shmidMESSAGE = shmget(IPC_PRIVATE, 1 * sizeof(Message), IPC_CREAT | 0666);
-//      messages = (Message *) shmat(shmidMESSAGE, NULL, 0);
-    
+    shmidTOPIC = shmget(IPC_PRIVATE, 1 * sizeof(Topic), IPC_CREAT | 0666);
+    topics = (Topic *) shmat(shmidTOPIC, NULL, 0);
+    Topic* headT = NULL;
+    shmidTOPIC = shmget(IPC_PRIVATE, 1 * sizeof(Thread), IPC_CREAT | 0666);
+    headT = (Topic *) shmat(shmidTOPIC, NULL, 0);
+    headT->next = NULL;
+    strcpy(headT->name, "Welcome to this whiteboard written in C!");
+    strcpy(headT->upperThread, headTH->name);
+    shmdt(headT);
+        printf("topic %d\n", shmidTOPIC);
+
     // INIT OF SYSV SEMAPHORE
     if (sem_init(key_sem) < 0) printf("Error creating semaphore set!\n");
     
@@ -90,7 +223,7 @@ int main(){
 			close(sockfd);
             
             recv(newSocket, buffer, 1024, 0);
-            printf("sono nel processo figlio\n. Ho ricevuto: %s\n", buffer);
+//             printf("sono nel processo figlio\n. Ho ricevuto: %s\n", buffer);
             
             if(strcmp(buffer, ":exit") == 0){
  					printf("Disconnected from %s:%d\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
@@ -102,7 +235,7 @@ int main(){
                 char operation[1024];
                 char payload[1024];
                 
-                printf("OPERAZIONE %s\n", operation);
+//                 printf("OPERAZIONE %s\n", operation);
                 
                  while (token != NULL){
                         if (i == 1) {
@@ -165,8 +298,9 @@ int main(){
                         }
                     }
                     
-                    printf("ricevuto thread %s, topic %s\n", threadName, topicName);
-                    strcpy(buffer, "Hai richiesto la lista dei messaggi\n");
+                    
+                    printf("%d", shmidMESSAGE);
+                    printMessageList(topicName);
                     send(newSocket, buffer, strlen(buffer), 0);
                 }
                 
@@ -174,8 +308,12 @@ int main(){
                     
                     bzero(buffer, sizeof(buffer));
                     
-                    printf("operazione richiesta %s\n", operation);
-                    strcpy(buffer, "Hai richiesto la lista dei topic\n");
+                    printf("%d\n", shmidTOPIC);
+                    
+                        headT = (Topic *) shmat(shmidTOPIC, NULL, 0);
+
+                    printTopicList(headT, payload);
+                    printf("buffer %s\n", buffer);
                     send(newSocket, buffer, strlen(buffer), 0);
                     
                 }
@@ -185,7 +323,10 @@ int main(){
                     bzero(buffer, sizeof(buffer));
                     
                     printf("operazione richiesta %s\n", operation);
-                    strcpy(buffer, "Hai richiesto la lista dei thread\n");
+                    
+                    printThreadList(headTH);
+                    
+                    printf("buffer %s\n", buffer);
                     send(newSocket, buffer, strlen(buffer), 0);
                 }
                 

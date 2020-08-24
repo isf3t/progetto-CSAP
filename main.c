@@ -53,7 +53,8 @@ void list(char* service){
             exit(1);
         }
         
-        printf("Ho ricevuto: %s\n", buffer);
+                printf("%s\n", buffer);
+
     
     }
     
@@ -75,7 +76,9 @@ void list(char* service){
             exit(1);
         }
         
-        printf("Ho ricevuto: %s\n", buffer);
+                printf("%s\n", buffer);
+
+        
     }
     
     if (service == "thread") {
@@ -93,7 +96,7 @@ void list(char* service){
             exit(1);
         }
         
-        printf("Ho ricevuto: %s\n", buffer);
+        printf("%s\n", buffer);
     }
     
 }
