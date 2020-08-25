@@ -5,7 +5,7 @@ typedef struct Message{
     char src[50];
     char dst[50];
     char upperTopic[50];
-    struct Message* next;
+    int next;
     
 }Message;
 
@@ -13,7 +13,8 @@ typedef struct Topic {
     
     char name[50];
     char upperThread[50];
-    struct Topic* next;
+    char owner[50];
+    int next;
     
 }Topic;
 
@@ -21,6 +22,6 @@ typedef struct Thread {
 
     char name[50];
     char owner[20];
-    struct Thread* next;
+    int next;
     
 }Thread;
