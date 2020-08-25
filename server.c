@@ -19,16 +19,18 @@ int shmidTOPIC;
 int shmidTHREAD;
 int shmidMESSAGE;
 
-char* printMessageList(Message* head, char* topicName, char* buffer){
+char* printMessageList(int shmid, char* topicName, char* buffer){
     
-    printf("sono qui %d", head->next);
+    Message* head = (Message *) shmat(shmid, NULL, 0);
+
     if (head == NULL) strcpy(buffer, "Nessun Topic Trovato!\n");
     else{
         strcpy(buffer, "Nessun Topic Trovato!\n");
     }
     
     do {
-        printf("sono nel ciclo");
+        printf("sono nel ciclo\n");
+        printf("upperTopic: %s, topic arrivato: %s\n", head->upperTopic, topicName);
         if (strcmp(head->upperTopic, topicName) == 0){
             bzero(buffer, sizeof(buffer));
             strcpy(buffer, "Related To Topic: \n");
@@ -42,26 +44,30 @@ char* printMessageList(Message* head, char* topicName, char* buffer){
             strcat(buffer, "\n\n");
         }
         
+        else if (head->next == -1) break;
+        
         else {
         
             head = (Message *) shmat(head->next, NULL, 0);
             
         }
+        
     } while(head->next != -1);
     
     return buffer;
     
 }
 
-char* printTopicList(Topic* head, char* threadName, char* buffer){
-    printf("sono qui %d", head->next);
+char* printTopicList(int shmid, char* threadName, char* buffer){
+    
+    Topic* head = (Topic *) shmat(shmid, NULL, 0);
+    
     if (head == NULL) strcpy(buffer, "Nessun Topic Trovato!\n");
     else{
         strcpy(buffer, "Nessun Topic Trovato!\n");
     }
     
     do {
-        printf("sono nel ciclo");
         if (strcmp(head->upperThread, threadName) == 0){
             bzero(buffer, sizeof(buffer));
             strcpy(buffer, "Related To Thread: \n");
@@ -72,12 +78,17 @@ char* printTopicList(Topic* head, char* threadName, char* buffer){
             strcat(buffer, "\n\n");
         }
         
+        else if(head->next == -1) break;
+        
         else {
         
             head = (Topic *) shmat(head->next, NULL, 0);
             
         }
+        
     } while(head->next != -1);
+    
+    shmdt(head);
     
     return buffer;
     
@@ -109,32 +120,37 @@ char* printTopicList(Topic* head, char* threadName, char* buffer){
 //     }    
 // }
 
-char* printThreadList(Thread* head, char* buffer){
+char* printThreadList(int shmid, char* buffer){
     
-    printf("sono qui");
+    Thread* head = (Thread *) shmat(shmid, NULL, 0);
     
-    if (head == NULL) strcpy(buffer, "Nessun Thread Trovato");
+    if (head == NULL) strcpy(buffer, "Nessun Topic Trovato!\n");
     else{
-        strcpy(buffer, "Nessun Thread Trovato!\n");
+        strcpy(buffer, "Nessun Topic Trovato!\n");
+        printf("sono qui %d", head->name);
     }
     
-    do{
-        printf("sono nel ciclo");
+    do {
         bzero(buffer, sizeof(buffer));
-        strcat(buffer, "Thread Name: \n");
+        strcpy(buffer, "Thread name: \n");
         strcat(buffer, head->name);
         strcat(buffer, "\n");
-        strcat(buffer, "Thread Owner: \n");
+        strcat(buffer, "Owner: \n");
         strcat(buffer, head->owner);
         strcat(buffer, "\n\n");
-        head = (Thread *) shmat(head->next, NULL, 0);
-    
         
-    } while(head->next != -1);
+        if (head->next == -1) break;
+        
+        else{
+            head = (Thread *) shmat(head->next, NULL, 0);
+        }        
+        
+    }  while(head->next != -1);
     
-    printf("buffer nella funzione %s\n", buffer);
+    shmdt(head);
     
     return buffer;
+    
 }
 
 int main(){
@@ -286,56 +302,31 @@ int main(){
                 
                 if (strcmp(operation, "listM") == 0){
                     
-                    int i = 0;
-                    char* values = strtok(payload, ",");
-                    char threadName[50];
-                    char topicName[50];
-                    
                     bzero(buffer, sizeof(buffer));
                     
-                    while (payload != NULL){
-                        
-                        if (i == 1) {
-                            strcpy(topicName, values);
-                            break;
-                        }
-                        if (i == 0){
-                            strcpy(threadName, values);
-                            values = strtok(NULL, ",");
-                            i++;
-                        }
-                    }
-                    
-                    bzero(buffer, sizeof(buffer));
-                    
-                    headM = (Message *) shmat(shmidMESSAGE, NULL, 0);
-                    
-                    strcpy(buffer, printMessageList(headM, topicName, buffer));
-                    
+                    strcpy(buffer, printMessageList(shmidMESSAGE, payload, buffer));
+
                     send(newSocket, buffer, strlen(buffer), 0);
                 }
                 
                 if (strcmp(operation, "listT") == 0){
                     
                     bzero(buffer, sizeof(buffer));
-                
-                    headT = (Topic *) shmat(shmidTOPIC, NULL, 0);
                     
-                    strcpy(buffer, printTopicList(headT, payload, buffer));
+                    strcpy(buffer, printTopicList(shmidTOPIC, payload, buffer));
                     
                     send(newSocket, buffer, strlen(buffer), 0);
                     
                 }
                 
                 if (strcmp(operation, "listTH") == 0){
-                    printf("sono quiii");
+
                     bzero(buffer, sizeof(buffer));
                     
-                    headTH = (Thread *) shmat(shmidTHREAD, NULL, 0);
-                    
-                    strcpy(buffer, printThreadList(headTH, buffer));
+                    strcpy(buffer, printThreadList(shmidTHREAD, buffer));
 
                     send(newSocket, buffer, strlen(buffer), 0);
+                    
                 }
                 
                 if (strcmp(operation, "replyTO") == 0){
