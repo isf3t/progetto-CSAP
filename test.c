@@ -12,29 +12,78 @@
 #include "utility.h"
 #include "data_structure.h"
 
+void printNode(int shmid){
+    
+    Thread* head = (Thread *) shmat(shmid, NULL, 0);
+    
+    do {
+        printf("sono nel ciclo\n");
+        printf("ecco il messaggio corrente %s\n", head->name);
+        
+        if (head->next == -1) break;
+        
+        else {
+        
+            head = (Thread *) shmat(head->next, NULL, 0);
+            
+        }
+        
+    } while(1);
+    
+}
+
+void addNode(int shmid){
+    
+    Thread* head = (Thread *) shmat(shmid, NULL, 0);
+    
+    do {
+        printf("sono nel ciclo\n");
+        if (head->next == -1) {
+            printf("aggiungo un nodo\n");
+            shmid = shmget(IPC_PRIVATE, 1 * sizeof(Thread), IPC_CREAT | 0666);
+            Thread* new = (Thread *) shmat(shmid, NULL, 0);
+            strcpy(new->name, "Questo + un nuovo topic di test\n");
+            strcpy(new->owner, "isfet");
+            new->next = -1;
+            head->next = shmid;
+            shmdt(new);
+            break;
+        }
+        
+        else {
+            printf("else scorro la lista\n");
+            head = (Thread *) shmat(head->next, NULL, 0);
+            
+        }
+        
+    } while(head->next != -1);
+}
+
 int main(){
     
     key_t key_shm = ftok("users.txt", 'E'); 
     
-    int shmidMESSAGE;
+    int shmid;
 
-    Message* messages;
+    Thread* threads;
     
     // SHMEM INIT
-    shmidMESSAGE = shmget(IPC_PRIVATE, 1 * sizeof(Message), IPC_CREAT | 0666);
-    messages = (Message *) shmat(shmidMESSAGE, NULL, 0);
-    Message* headM = NULL;
-    shmidMESSAGE = shmget(IPC_PRIVATE, 1 * sizeof(Thread), IPC_CREAT | 0666);
-    headM = (Message *) shmat(shmidMESSAGE, NULL, 0);
-    headM->next = 0;
-    strcpy(headM->src, "admin");
-    strcpy(headM->upperTopic, "Welcome to this whiteboard written in C!");
-    strcpy(headM->body, "This is your first message of welcome!");
-    printf("messaggio %s\n", headM->src);
-    shmdt(headM);
-//     printf("messaggio %d\n", shmidMESSAGE);
+    shmid = shmget(IPC_PRIVATE, 1 * sizeof(Thread), IPC_CREAT | 0666);
+    threads = (Thread *) shmat(shmid, NULL, 0);
+    Thread* headTH = NULL;
+    shmid = shmget(IPC_PRIVATE, 1 * sizeof(Thread), IPC_CREAT | 0666);
+    headTH = (Thread *) shmat(shmid, NULL, 0);
+    headTH->next = -1;
+    strcpy(headTH->owner, "admin");
+    strcpy(headTH->name, "Welcome!");
+    shmdt(headTH);
     
-    headM = (Message *) shmat(shmidMESSAGE, NULL, 0);
-    printf("messaggio %s\n", headM->src);
+    headTH = (Thread *) shmat(shmid, NULL, 0);
+    printf("messaggio %s, id %d\n", headTH->name, shmid);
+    shmdt(headTH);
+    
+    addNode(shmid);
+    
+    printNode(shmid);
     return 0;
 }

@@ -19,6 +19,204 @@ int shmidTOPIC;
 int shmidTHREAD;
 int shmidMESSAGE;
 
+char* printNode(int shmid, char* flag){
+    
+    if(strcmp(flag, "m") == 0){
+        Message* head = (Message *) shmat(shmid, NULL, 0);
+    
+        do {
+            printf("sono nel ciclo\n");
+            printf("ecco il messaggio corrente %s\n", head->body);
+            
+            if (head->next == -1) break;
+            
+            else {
+            
+                head = (Message *) shmat(head->next, NULL, 0);
+                
+            }
+            
+        } while(1);
+    }
+    else if (strcmp(flag, "th") == 0){
+        Thread* head = (Thread *) shmat(shmid, NULL, 0);
+    
+        do {
+            printf("sono nel ciclo\n");
+            printf("ecco il messaggio corrente %s\n", head->name);
+            
+            if (head->next == -1) break;
+            
+            else {
+            
+                head = (Thread *) shmat(head->next, NULL, 0);
+                
+            }
+            
+        } while(1);
+    }
+    else{
+    
+        Topic* head = (Topic *) shmat(shmid, NULL, 0);
+    
+        do {
+            printf("sono nel ciclo\n");
+            printf("ecco il messaggio corrente %s\n", head->name);
+            
+            if (head->next == -1) break;
+            
+            else {
+            
+                head = (Topic *) shmat(head->next, NULL, 0);
+                
+            }
+            
+        } while(1);
+        
+    }
+    
+}
+
+int addThread(int shmid, char* threadName){
+    
+    Thread* head = (Thread *) shmat(shmid, NULL, 0);
+    int numThread = 0;
+    
+    do {
+        
+        numThread++;
+        printf("sono nel ciclo\n");
+        if (head->next == -1) {
+            printf("aggiungo un nodo\n");
+            shmid = shmget(IPC_PRIVATE, 1 * sizeof(Thread), IPC_CREAT | 0666);
+            
+            if (shmid < 0) return -1;
+            
+            else{
+                Thread* new = (Thread *) shmat(shmid, NULL, 0);
+                
+                if (new == (void*)-1) return -1;
+                
+                else{
+                    strcpy(new->name, threadName);
+                    strcpy(new->name, topicName);
+                    strcpy(new->owner, "test");
+                    new->next = -1;
+                    head->next = shmid;
+                    shmdt(new);
+                    numTopic++;
+                    break;
+                }
+            }            
+        }
+        
+        else {
+            
+            printf("else scorro la lista\n");
+            head = (Topic *) shmat(head->next, NULL, 0);
+            
+        }
+        
+    } while(1);
+    
+    printf("\n\n");
+    
+    return numThread;
+}
+
+int addMessage(int shmid, char* topicName, char* body){
+    
+    Message* head = (Message *) shmat(shmid, NULL, 0);
+    int numMess = 0;
+    
+    do {
+        
+        numMess++;
+        printf("sono nel ciclo\n");
+        if (head->next == -1) {
+            printf("aggiungo un nodo\n");
+            shmid = shmget(IPC_PRIVATE, 1 * sizeof(Message), IPC_CREAT | 0666);
+            
+            if (shmid < 0) return -1;
+            
+            else{
+                Message* new = (Message *) shmat(shmid, NULL, 0);
+                
+                if (new == (void*)-1) return -1;
+                
+                else{
+                    strcpy(new->upperTopic, topicName);
+                    strcpy(new->body, body);
+                    new->next = -1;
+                    head->next = shmid;
+                    shmdt(new);
+                    numMess++;
+                    break;
+                }
+            }            
+        }
+        
+        else {
+            
+            printf("else scorro la lista\n");
+            head = (Message *) shmat(head->next, NULL, 0);
+            
+        }
+        
+    } while(1);
+    
+    printf("\n\n");
+    
+    return numMess;
+}
+
+int addTopic(int shmid, char* threadName, char* topicName){
+    
+    Topic* head = (Topic *) shmat(shmid, NULL, 0);
+    int numTopic = 0;
+    
+    do {
+        
+        numTopic++;
+        printf("sono nel ciclo\n");
+        if (head->next == -1) {
+            printf("aggiungo un nodo\n");
+            shmid = shmget(IPC_PRIVATE, 1 * sizeof(Topic), IPC_CREAT | 0666);
+            
+            if (shmid < 0) return -1;
+            
+            else{
+                Topic* new = (Topic *) shmat(shmid, NULL, 0);
+                
+                if (new == (void*)-1) return -1;
+                
+                else{
+                    strcpy(new->upperThread, threadName);
+                    strcpy(new->name, topicName);
+                    strcpy(new->owner, "test");
+                    new->next = -1;
+                    head->next = shmid;
+                    shmdt(new);
+                    numTopic++;
+                    break;
+                }
+            }            
+        }
+        
+        else {
+            
+            printf("else scorro la lista\n");
+            head = (Topic *) shmat(head->next, NULL, 0);
+            
+        }
+        
+    } while(1);
+    
+    printf("\n\n");
+    
+    return numTopic;
+}
+
 char* printMessageList(int shmid, char* topicName, char* buffer){
     
     Message* head = (Message *) shmat(shmid, NULL, 0);
@@ -29,9 +227,8 @@ char* printMessageList(int shmid, char* topicName, char* buffer){
     }
     
     do {
-        printf("sono nel ciclo\n");
-        printf("upperTopic: %s, topic arrivato: %s\n", head->upperTopic, topicName);
         if (strcmp(head->upperTopic, topicName) == 0){
+            printf("sono in if\n");
             bzero(buffer, sizeof(buffer));
             strcpy(buffer, "Related To Topic: \n");
             strcat(buffer, head->upperTopic);
@@ -42,12 +239,16 @@ char* printMessageList(int shmid, char* topicName, char* buffer){
             strcat(buffer, "Body: \n");
             strcat(buffer, head->body);
             strcat(buffer, "\n\n");
+        
+            if (head->next == -1) {
+                printf("sono in if interno\n");
+                break;
+            }
+            
         }
         
-        else if (head->next == -1) break;
-        
         else {
-        
+            printf("sono in else\n");
             head = (Message *) shmat(head->next, NULL, 0);
             
         }
@@ -330,25 +531,40 @@ int main(){
                 }
                 
                 if (strcmp(operation, "replyTO") == 0){
-                    printf("richiesta di reply ricevuta");
+                    
+                    
+                    int i = 0;
+                    char* values = strtok(payload, ",");
+                    char body[140];
+                    char topicName[50];
+                    
+                    bzero(buffer, sizeof(buffer));
+                    
+                    while (payload != NULL){
+                        
+                        if (i == 1) {
+                            strcpy(body, values);
+                            break;
+                        }
+                        if (i == 0){
+                            strcpy(topicName, values);
+                            values = strtok(NULL, ",");
+                            i++;
+                        }
+                    }
+                    
+                    int numMess = addMessage(shmidMESSAGE, topicName, body);
+                    
+                    if (numMess > 0){
+                        
+                        bzero(buffer, sizeof(buffer));
+                        strcpy(buffer, "ok");
+                        send(newSocket, buffer, strlen(buffer), 0);
+                        
+                    }
+                    
+                    else printf("Error replying to message!\n");
                 }
-                
-//                 printf("Client: %s\n", buffer);
-//  					send(newSocket, buffer, strlen(buffer), 0);
-//  					bzero(buffer, sizeof(buffer));
-//  				}
-// 			while(1){
-// 				recv(newSocket, buffer, 1024, 0);
-// 				if(strcmp(buffer, ":exit") == 0){
-// 					printf("Disconnected from %s:%d\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
-// 					break;
-// 				}else{
-// 					printf("Client: %s\n", buffer);
-// 					send(newSocket, buffer, strlen(buffer), 0);
-// 					bzero(buffer, sizeof(buffer));
-// 				}
-// 			}
-                
             }
 		}
 

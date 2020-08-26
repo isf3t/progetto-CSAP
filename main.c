@@ -20,12 +20,23 @@ void reply(char* messageBody){
     bzero(buffer, sizeof(buffer));
     
     strcpy(buffer,"replyTO:");
-    strcat(buffer, threadName);
-    strcat(buffer, ",");
     strcat(buffer, topicName);
     strcat(buffer, ",");
     strcat(buffer, messageBody);
     printf("stringa concatenata %s\n", buffer);
+    
+    send(clientSocket, buffer, strlen(buffer), 0);
+        
+    bzero(buffer, sizeof(buffer));
+        
+    int res = recv(clientSocket, buffer, 1024, 0);
+        
+    if (res <0){
+        printf("Error comunicating with server\n");
+        exit(1);
+    }
+    
+    if (strcmp(buffer, "ok") == 0) printf("Message replied correctly!\n");
     
 }
 
@@ -51,10 +62,8 @@ void list(char* service){
             printf("Error comunicating with server\n");
             exit(1);
         }
-        
-                printf("%s\n", buffer);
+                        printf("%s\n", buffer);
 
-    
     }
     
     if (service == "topic") {
@@ -137,15 +146,15 @@ void authenticate(){
     }
     
     else if(strcmp(buffer, "alreadyAuthenticated") == 0){
-        printf("utente già loggato");
+        printf("utente già loggato\n");
     }
     
     else if(strcmp(buffer, "authenticated") == 0){
-        printf("autenticato");
+        printf("autenticato\n");
     }
     
     else if(strcmp(buffer, "unautorized") == 0){
-        printf("NON autenticato");
+        printf("NON autenticato\n");
     }
     
     
@@ -217,12 +226,11 @@ int main(int argc, char* argv[]){
         }
         
         if (strcmp(cmd, "reply")== 0) {
-            if (argc >= 5 && argv[3] != NULL && argv[4] != NULL && strlen(argv[4]) <= 140){
+            if (argc >= 4 && argv[3] != NULL && strlen(argv[3]) <= 140){
                     
                     serviceToCall = 5;
-                    strcpy(threadName, argv[2]);
-                    strcpy(topicName, argv[3]);
-                    strcpy(messageBody, argv[4]);
+                    strcpy(topicName, argv[2]);
+                    strcpy(messageBody, argv[3]);
                 }
                 else{
                     printf("%s, %s\n", argv[3], argv[4]);
