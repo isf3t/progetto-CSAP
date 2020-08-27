@@ -26,7 +26,7 @@ char* printNode(int shmid, char* flag){
     
         do {
             printf("sono nel ciclo\n");
-            printf("ecco il messaggio corrente %s\n", head->body);
+            printf("ecco il messaggio corrente %s, da: %s\n", head->body, head->src);
             
             if (head->next == -1) break;
             
@@ -39,11 +39,12 @@ char* printNode(int shmid, char* flag){
         } while(1);
     }
     else if (strcmp(flag, "th") == 0){
+        printf("sono nei trhread\n");
         Thread* head = (Thread *) shmat(shmid, NULL, 0);
     
         do {
             printf("sono nel ciclo\n");
-            printf("ecco il messaggio corrente %s\n", head->name);
+            printf("ecco il thread corrente %s\n", head->name);
             
             if (head->next == -1) break;
             
@@ -77,7 +78,7 @@ char* printNode(int shmid, char* flag){
     
 }
 
-int addThread(int shmid, char* threadName){
+int addThread(int shmid, char* threadName, char* username){
     
     Thread* head = (Thread *) shmat(shmid, NULL, 0);
     int numThread = 0;
@@ -99,12 +100,11 @@ int addThread(int shmid, char* threadName){
                 
                 else{
                     strcpy(new->name, threadName);
-                    strcpy(new->name, topicName);
-                    strcpy(new->owner, "test");
+                    strcpy(new->owner, username);
                     new->next = -1;
                     head->next = shmid;
                     shmdt(new);
-                    numTopic++;
+                    numThread++;
                     break;
                 }
             }            
@@ -113,18 +113,18 @@ int addThread(int shmid, char* threadName){
         else {
             
             printf("else scorro la lista\n");
-            head = (Topic *) shmat(head->next, NULL, 0);
+            head = (Thread *) shmat(head->next, NULL, 0);
             
         }
         
     } while(1);
     
     printf("\n\n");
-    
+    shmdt(head);
     return numThread;
 }
 
-int addMessage(int shmid, char* topicName, char* body){
+int addMessage(int shmid, char* topicName, char* body, char* username){
     
     Message* head = (Message *) shmat(shmid, NULL, 0);
     int numMess = 0;
@@ -147,6 +147,7 @@ int addMessage(int shmid, char* topicName, char* body){
                 else{
                     strcpy(new->upperTopic, topicName);
                     strcpy(new->body, body);
+                    strcpy(new->src, username);
                     new->next = -1;
                     head->next = shmid;
                     shmdt(new);
@@ -166,55 +167,8 @@ int addMessage(int shmid, char* topicName, char* body){
     } while(1);
     
     printf("\n\n");
-    
+    shmdt(head);
     return numMess;
-}
-
-int addTopic(int shmid, char* threadName, char* topicName){
-    
-    Topic* head = (Topic *) shmat(shmid, NULL, 0);
-    int numTopic = 0;
-    
-    do {
-        
-        numTopic++;
-        printf("sono nel ciclo\n");
-        if (head->next == -1) {
-            printf("aggiungo un nodo\n");
-            shmid = shmget(IPC_PRIVATE, 1 * sizeof(Topic), IPC_CREAT | 0666);
-            
-            if (shmid < 0) return -1;
-            
-            else{
-                Topic* new = (Topic *) shmat(shmid, NULL, 0);
-                
-                if (new == (void*)-1) return -1;
-                
-                else{
-                    strcpy(new->upperThread, threadName);
-                    strcpy(new->name, topicName);
-                    strcpy(new->owner, "test");
-                    new->next = -1;
-                    head->next = shmid;
-                    shmdt(new);
-                    numTopic++;
-                    break;
-                }
-            }            
-        }
-        
-        else {
-            
-            printf("else scorro la lista\n");
-            head = (Topic *) shmat(head->next, NULL, 0);
-            
-        }
-        
-    } while(1);
-    
-    printf("\n\n");
-    
-    return numTopic;
 }
 
 char* printMessageList(int shmid, char* topicName, char* buffer){
@@ -226,11 +180,13 @@ char* printMessageList(int shmid, char* topicName, char* buffer){
         strcpy(buffer, "Nessun Topic Trovato!\n");
     }
     
+    bzero(buffer, sizeof(buffer));
+    
     do {
         if (strcmp(head->upperTopic, topicName) == 0){
             printf("sono in if\n");
-            bzero(buffer, sizeof(buffer));
-            strcpy(buffer, "Related To Topic: \n");
+            strcat(buffer, "\n");
+            strcat(buffer, "Related To Topic: \n");
             strcat(buffer, head->upperTopic);
             strcat(buffer, "\n");
             strcat(buffer, "SRC: \n");
@@ -268,10 +224,12 @@ char* printTopicList(int shmid, char* threadName, char* buffer){
         strcpy(buffer, "Nessun Topic Trovato!\n");
     }
     
+    bzero(buffer, sizeof(buffer));
+    
     do {
         if (strcmp(head->upperThread, threadName) == 0){
-            bzero(buffer, sizeof(buffer));
-            strcpy(buffer, "Related To Thread: \n");
+            strcat(buffer, "\n");
+            strcat(buffer, "Related To Thread: \n");
             strcat(buffer, head->upperThread);
             strcat(buffer, "\n");
             strcat(buffer, "Topic Name: \n");
@@ -331,9 +289,11 @@ char* printThreadList(int shmid, char* buffer){
         printf("sono qui %d", head->name);
     }
     
+    bzero(buffer, sizeof(buffer));
+    
     do {
-        bzero(buffer, sizeof(buffer));
-        strcpy(buffer, "Thread name: \n");
+        strcat(buffer, "\n");
+        strcat(buffer, "Thread name: \n");
         strcat(buffer, head->name);
         strcat(buffer, "\n");
         strcat(buffer, "Owner: \n");
@@ -343,12 +303,15 @@ char* printThreadList(int shmid, char* buffer){
         if (head->next == -1) break;
         
         else{
+            
             head = (Thread *) shmat(head->next, NULL, 0);
+       
+            
         }        
         
-    }  while(head->next != -1);
+    }  while(1);
     
-    shmdt(head);
+   
     
     return buffer;
     
@@ -523,7 +486,7 @@ int main(){
                 if (strcmp(operation, "listTH") == 0){
 
                     bzero(buffer, sizeof(buffer));
-                    
+
                     strcpy(buffer, printThreadList(shmidTHREAD, buffer));
 
                     send(newSocket, buffer, strlen(buffer), 0);
@@ -537,14 +500,20 @@ int main(){
                     char* values = strtok(payload, ",");
                     char body[140];
                     char topicName[50];
+                    char username[50];
                     
                     bzero(buffer, sizeof(buffer));
                     
                     while (payload != NULL){
                         
+                        if (i == 2){
+                            strcpy(username, values);
+                            break;
+                        }
                         if (i == 1) {
                             strcpy(body, values);
-                            break;
+                            values = strtok(NULL, ",");
+                            i++;
                         }
                         if (i == 0){
                             strcpy(topicName, values);
@@ -553,10 +522,11 @@ int main(){
                         }
                     }
                     
-                    int numMess = addMessage(shmidMESSAGE, topicName, body);
+                    int numMess = addMessage(shmidMESSAGE, topicName, body, username);
                     
                     if (numMess > 0){
                         
+                        printNode(shmidMESSAGE, "m");
                         bzero(buffer, sizeof(buffer));
                         strcpy(buffer, "ok");
                         send(newSocket, buffer, strlen(buffer), 0);
@@ -564,6 +534,41 @@ int main(){
                     }
                     
                     else printf("Error replying to message!\n");
+                }
+                
+                if (strcmp(operation, "addThread") == 0){
+                    
+                    printf("sono in addThread\n");
+                    int i = 0;
+                    char* values = strtok(payload, ",");
+                    char threadName[50];
+                    char username[50];
+                    
+                    bzero(buffer, sizeof(buffer));
+                    
+                    while (payload != NULL){
+                        
+                        if (i == 1) {
+                            strcpy(username, values);
+                            break;
+                        }
+                        if (i == 0){
+                            strcpy(threadName, values);
+                            values = strtok(NULL, ",");
+                            i++;
+                        }
+                    }
+                    
+                    int numThread = addThread(shmidTHREAD, threadName, username);
+                    
+                    if (numThread > 0) {
+                        printf("printo i Thread\n");
+                        printNode(shmidTHREAD, "th");
+                        bzero(buffer, sizeof(buffer));
+                        strcpy(buffer, "ok");
+                        send(newSocket, buffer, strlen(buffer), 0);
+                        
+                    }
                 }
             }
 		}

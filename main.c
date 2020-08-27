@@ -15,7 +15,70 @@ char topicName[50];
 
 #define PORT 4444
 
+void deleteThread(char* threadName){
+    char username[50];
+    
+    printf("Type your username:\n");
+    scanf("%s", &username[0]);
+    
+    bzero(buffer, sizeof(buffer));
+    
+    strcpy(buffer,"delThread:");
+    strcat(buffer, threadName);
+    strcat(buffer, ",");
+    strcat(buffer, username);
+    printf("stringa concatenata %s\n", buffer);
+    
+    send(clientSocket, buffer, strlen(buffer), 0);
+        
+    bzero(buffer, sizeof(buffer));
+        
+    int res = recv(clientSocket, buffer, 1024, 0);
+        
+    if (res <0){
+        printf("Error comunicating with server\n");
+        exit(1);
+    }
+    
+    if (strcmp(buffer, "ok") == 0) printf("Thread created correctly!\n");
+}
+
+void addThread(char* threadName){
+    
+    char username[50];
+    
+    printf("Type your username:\n");
+    scanf("%s", &username[0]);
+
+    bzero(buffer, sizeof(buffer));
+    
+    strcpy(buffer,"addThread:");
+    strcat(buffer, threadName);
+    strcat(buffer, ",");
+    strcat(buffer, username);
+    printf("stringa concatenata %s\n", buffer);
+    
+    send(clientSocket, buffer, strlen(buffer), 0);
+        
+    bzero(buffer, sizeof(buffer));
+        
+    int res = recv(clientSocket, buffer, 1024, 0);
+        
+    if (res <0){
+        printf("Error comunicating with server\n");
+        exit(1);
+    }
+    
+    if (strcmp(buffer, "ok") == 0) printf("Thread created correctly!\n");
+    
+}
+
 void reply(char* messageBody){
+    
+    char username[50];
+    
+    printf("Type your username:\n");
+    scanf("%s", &username[0]);
 
     bzero(buffer, sizeof(buffer));
     
@@ -23,6 +86,8 @@ void reply(char* messageBody){
     strcat(buffer, topicName);
     strcat(buffer, ",");
     strcat(buffer, messageBody);
+    strcat(buffer, ",");
+    strcat(buffer, username);
     printf("stringa concatenata %s\n", buffer);
     
     send(clientSocket, buffer, strlen(buffer), 0);
@@ -181,7 +246,6 @@ int connectToServer(){
 		return -1;
 	}
 	printf("[+]Connected to Server.\n");
-    printf("[+]Authentication needed.\n");
     
     return 1;
 //     int res = authenticate(clientSocket, buffer, strlen(buffer), 0);
@@ -234,21 +298,15 @@ int main(int argc, char* argv[]){
                 }
                 else{
                     printf("%s, %s\n", argv[3], argv[4]);
-                    printf("\nUSAGE: ./main reply (thread name + topic name + message max 140)]\n");
+                    printf("\nUSAGE: ./main reply (topic name + message max 140)]\n");
                 }
         }
         
         if (strcmp(cmd, "create") == 0){
-            if (argv[2] == NULL) printf("\nUSAGE: ./main create [topic]\n");
+            if (argv[2] == NULL) printf("\nUSAGE: ./main create [thread]\n");
             else{
+                strcpy(threadName, argv[2]);
                 serviceToCall = 7;
-            }
-        }
-        
-        if (strcmp(cmd, "append") == 0){
-            if (argv[2] == NULL) printf("\nUSAGE: ./main append [topic] [thread]\n");
-            else{
-                serviceToCall = 8;
             }
         }
         
@@ -269,26 +327,22 @@ int main(int argc, char* argv[]){
             if (connectToServer() > 0) authenticate();
             break;
         case 2:
-            printf("service to call %d\n", serviceToCall);
             if (connectToServer() > 0) list("message");
             break;
         case 3:
-            printf("service to call %d\n", serviceToCall);
             if (connectToServer() > 0) list("topic");
             break;
         case 4:
-            printf("service to call %d\n", serviceToCall);
             if (connectToServer() > 0) list("thread");
             break;
         case 5:
-            printf("servizio %d\n", serviceToCall);
             if (connectToServer() > 0) reply(messageBody);
             break;
         case 6:
             printf("servizio %d\n", serviceToCall);
             break;
         case 7:
-            printf("servizio %d\n", serviceToCall);
+            if (connectToServer() > 0) addThread(threadName);
             break;
     }  
     
