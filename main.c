@@ -40,7 +40,7 @@ void deleteThread(char* threadName){
         exit(1);
     }
     
-    if (strcmp(buffer, "ok") == 0) printf("Thread created correctly!\n");
+    if (strcmp(buffer, "ok") == 0) printf("Thread and all topics and messages related are deleted correctly!\n");
 }
 
 void addThread(char* threadName){
@@ -54,6 +54,38 @@ void addThread(char* threadName){
     
     strcpy(buffer,"addThread:");
     strcat(buffer, threadName);
+    strcat(buffer, ",");
+    strcat(buffer, username);
+    printf("stringa concatenata %s\n", buffer);
+    
+    send(clientSocket, buffer, strlen(buffer), 0);
+        
+    bzero(buffer, sizeof(buffer));
+        
+    int res = recv(clientSocket, buffer, 1024, 0);
+        
+    if (res <0){
+        printf("Error comunicating with server\n");
+        exit(1);
+    }
+    
+    if (strcmp(buffer, "ok") == 0) printf("Thread created correctly!\n");
+    
+}
+
+void addTopic(char* threadName, char* topicName){
+    
+    char username[50];
+    
+    printf("Type your username:\n");
+    scanf("%s", &username[0]);
+
+    bzero(buffer, sizeof(buffer));
+    
+    strcpy(buffer,"addTopic:");
+    strcat(buffer, threadName);
+    strcat(buffer, ",");
+    strcat(buffer, topicName);
     strcat(buffer, ",");
     strcat(buffer, username);
     printf("stringa concatenata %s\n", buffer);
@@ -306,14 +338,24 @@ int main(int argc, char* argv[]){
             if (argv[2] == NULL) printf("\nUSAGE: ./main create [thread]\n");
             else{
                 strcpy(threadName, argv[2]);
-                serviceToCall = 7;
+                serviceToCall = 6;
             }
         }
         
         if (strcmp(cmd, "delete") == 0){
-            if (argv[2] == NULL) printf("\nUSAGE: ./main delete [topic]\n");
+            if (argv[2] == NULL) printf("\nUSAGE: ./main delete [thread]\n");
             else{
-                serviceToCall = 9;
+                serviceToCall = 7;
+                strcpy(threadName, argv[2]);
+            }
+        }
+        
+        if (strcmp(cmd, "addTopic") == 0){
+            if (argv[2] == NULL) printf("\nUSAGE: ./main addTopic [thread name + topic name]\n");
+            else{
+                strcpy(threadName, argv[2]);
+                strcpy(topicName, argv[3]);
+                serviceToCall = 8;
             }
         }
         
@@ -339,10 +381,13 @@ int main(int argc, char* argv[]){
             if (connectToServer() > 0) reply(messageBody);
             break;
         case 6:
-            printf("servizio %d\n", serviceToCall);
+            if (connectToServer() > 0) addThread(threadName);
             break;
         case 7:
-            if (connectToServer() > 0) addThread(threadName);
+            if (connectToServer() > 0) deleteThread(threadName);
+            break;
+        case 8:
+            if (connectToServer() > 0) addTopic(threadName, topicName);
             break;
     }  
     
