@@ -8,7 +8,7 @@
 #include "utility.h"
 
 #define MAXCHAR 1000
-#define NSEMS 3
+#define NSEMS 1
 
 char* split(char* buf, char delim[]){
     
@@ -27,6 +27,8 @@ int authenticatedUser(char* buffer) {
     char* filename = "users.txt";
     int found = 0;
     int authenticated = '1';
+    
+    printf("setto i semafori\n");
  
     fp = fopen(filename, "r");
     if (fp == NULL){
@@ -51,23 +53,15 @@ int authenticatedUser(char* buffer) {
 int sem_init(key_t key){
     
     int semid; 
-    union semun  {
-        int val;
-        struct semid_ds *buf;
-        ushort *array;
-    } arg;
-
-
     
     /* create a semaphore set with NSEMS semaphore: */         
-    if ((semid = semget(key, 1, 0666 | IPC_CREAT)) == -1) {             
+    if ((semid = semget(key, NSEMS, 0666 | IPC_CREAT)) < 0) {             
         perror("semget");             
         return -1;
     }         
-    /* initialize all semaphore to 1: */   
-    arg.val = 1;
+    /* initialize all semaphore to 0: */   
     for (int i = 0; i<NSEMS; i++){
-        if (semctl(semid, i, SETVAL, arg) == -1) {             
+        if (semctl(semid, i, SETVAL, 0) < 0) {             
             perror("semctl");             
             return -1;
         } 
@@ -76,3 +70,34 @@ int sem_init(key_t key){
     return semid;
 }
 
+int setSem(int semid, int sem_num){
+    
+    struct sembuf sop[1];
+    
+    sop[0].sem_num=sem_num;
+	sop[0].sem_op=-1;
+    sop[0].sem_flg = 0;
+    
+	if (semop(semid,sop,1)) {
+	    perror("semop");
+	    return -1;
+	}
+
+    return 0;
+}
+
+int resetSem(int semid, int sem_num){
+    
+    struct sembuf sop[1];
+    
+    sop[0].sem_num=sem_num;
+	sop[0].sem_op=1;
+    sop[0].sem_flg = 0;
+    
+	if (semop(semid,sop,1)) {
+	    perror("semop");
+	    return -1;
+	}
+
+    return 0;
+}

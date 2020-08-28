@@ -32,6 +32,26 @@ void printNode(int shmid){
     
 }
 
+int sem_init(key_t key){
+    
+    int semid; 
+    
+    /* create a semaphore set with NSEMS semaphore: */         
+    if ((semid = semget(key, 1, 0666 | IPC_CREAT)) == -1) {             
+        perror("semget");             
+        return -1;
+    }         
+
+    for (int i = 0; i<1; i++){
+        if (semctl(semid, i, SETVAL, 1) == -1) {             
+            perror("semctl");             
+            return -1;
+        } 
+    }
+    
+    return semid;
+}
+
 void addNode(int shmid){
     
     Thread* head = (Thread *) shmat(shmid, NULL, 0);
@@ -66,6 +86,9 @@ int main(){
     int shmid;
 
     Thread* threads;
+    
+    int id = sem_init(key_shm);
+    printf("%d\n",id);
     
     // SHMEM INIT
     shmid = shmget(IPC_PRIVATE, 1 * sizeof(Thread), IPC_CREAT | 0666);

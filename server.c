@@ -19,7 +19,48 @@ int shmidTOPIC;
 int shmidTHREAD;
 int shmidMESSAGE;
 
-int deleteThread(int shmid, char* threadName, char* username){
+// int deleteRelatedTopics(int shmid, char* topicName){
+//     return 0;
+// }
+// 
+// int deleteRelatedTopics(int shmid, int shmidM, char* threadName, char* username){
+// 
+//     Topic* headT = (Topic *) shmat(shmid, NULL, 0);
+//     Topic* curr;
+//     
+//     do {
+//             
+//             if(strcmp(threadName, headT->upperThread) == 0 && strcmp(username, headT->owner) == 0){
+//                 
+//                 if (deleteRelatedMessage(shmidM, headT->name) < 0) return -1;
+//                 curr->next = headT->next;
+//                 
+//                 if (shmctl(headT->id, IPC_RMID, NULL) < 0) return -1;
+//                 
+//                 if (headT->next == -1) return 1;
+//             
+//                 else {
+//                     curr = headT;
+//                     headT = (Topic *) shmat(headT->next, NULL, 0);
+//                     
+//                 }
+//             }
+//             
+//             if (headT->next == -1) break;
+//             
+//             else {
+//                 curr = headT;
+//                 headT = (Topic *) shmat(headT->next, NULL, 0);
+//                 
+//             }
+//             
+//         } while(1);
+//         
+//     return 1;
+//     
+// }
+
+int deleteThread(int shmid, int shmidT, int shmidM, char* threadName, char* username){
     
     Thread* headT = (Thread *) shmat(shmid, NULL, 0);
     Thread* curr;
@@ -27,6 +68,8 @@ int deleteThread(int shmid, char* threadName, char* username){
     do {
             
             if(strcmp(threadName, headT->name) == 0 && strcmp(username, headT->owner) == 0){
+                
+//                 if (deleteRelatedTopics(shmidT, shmidM, headT->name, username) < 0) return -1;
                 curr->next = headT->next;
                 
                 if (shmctl(headT->id, IPC_RMID, NULL) < 0) return -1;
@@ -110,6 +153,55 @@ char* printNode(int shmid, char* flag){
         
     }
     
+}
+
+int addTopic(int shmid, char* threadName, char* topicName, char* username){
+    
+    Topic* head = (Topic *) shmat(shmid, NULL, 0);
+    int numTopic = 0;
+    
+    do {
+        
+        numTopic++;
+        printf("sono nel ciclo\n");
+        
+        if (head->next == -1) {
+            printf("aggiungo un nodo\n");
+            shmid = shmget(IPC_PRIVATE, 1 * sizeof(Topic), IPC_CREAT | 0666);
+            
+            if (shmid < 0) return -1;
+            
+            else{
+                Topic* new = (Topic *) shmat(shmid, NULL, 0);
+                
+                if (new == (void*)-1) return -1;
+                
+                else{
+                    strcpy(new->name, topicName);
+                    strcpy(new->owner, username);
+                    strcpy(new->upperThread, threadName);
+                    new->next = -1;
+                    new->id = shmid;
+                    head->next = shmid;
+                    shmdt(new);
+                    numTopic++;
+                    break;
+                }
+            }            
+        }
+        
+        else {
+            
+            printf("else scorro la lista\n");
+            head = (Topic *) shmat(head->next, NULL, 0);
+            
+        }
+        
+    } while(1);
+    
+    printf("\n\n");
+    shmdt(head);
+    return numTopic;
 }
 
 int addThread(int shmid, char* threadName, char* username){
@@ -211,7 +303,10 @@ char* printMessageList(int shmid, char* topicName, char* buffer){
     
     Message* head = (Message *) shmat(shmid, NULL, 0);
 
-    if (head == NULL) strcpy(buffer, "Nessun Messaggio Trovato!\n");
+    if (head == NULL) {
+        strcpy(buffer, "Nessun Messaggio Trovato!\n");
+        return buffer;
+    }
     
     do {
         if (strcmp(head->upperTopic, topicName) == 0){
@@ -250,7 +345,12 @@ char* printTopicList(int shmid, char* threadName, char* buffer){
     
     Topic* head = (Topic *) shmat(shmid, NULL, 0);
     
-    if (head == NULL) strcpy(buffer, "Nessun Topic Trovato!\n");
+    if (head == NULL) {
+        strcpy(buffer, "Nessun Topic Trovato!\n");
+        return buffer;
+    }
+    
+    bzero(buffer, sizeof(buffer));
 
     do {
         if (strcmp(head->upperThread, threadName) == 0){
@@ -310,7 +410,10 @@ char* printThreadList(int shmid, char* buffer){
     
     Thread* head = (Thread *) shmat(shmid, NULL, 0);
     
-    if (head == NULL) strcpy(buffer, "Nessun Topic Trovato!\n");
+    if (head == NULL) {
+        strcpy(buffer, "Nessun Thread Trovato!\n");
+        return buffer;
+    }
     
     do {
 
@@ -355,6 +458,13 @@ int main(){
 	char buffer[1024];
 	pid_t childpid;
     
+    struct sembuf sop[1];
+    struct shmid_ds shmid_struct;
+    int semid;
+    
+    memset( &sop[0], 0, sizeof( sop[0] ) );
+    memset( &shmid_struct, 0, sizeof( shmid_struct ) );
+    
     Topic* topics;
     Thread* threads;
     Message* messages;
@@ -396,7 +506,7 @@ int main(){
     shmdt(headM);
     
     // INIT OF SYSV SEMAPHORE
-    if (sem_init(key_sem) < 0) printf("Error creating semaphore set!\n");
+    if (semid = sem_init(key_sem) < 0) printf("Error creating semaphore set!\n");
     
     // SERVER SOCKET INIT
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -465,6 +575,17 @@ int main(){
                 if (strcmp(operation, "username") == 0){
                     
                     printf("Cerco di autenticare...%s\n", payload);
+                    
+                    // SET SEM TO LOCK RESURCES
+                    printf("setto i sem\n");
+                    sop[0].sem_num=0;
+                    sop[0].sem_op=-1;
+                    sop[0].sem_op=0;
+                    
+                    if (semop(semid,sop,1)) {
+                        perror("semop");
+                        exit(1);
+                    }
                 
                     int res = authenticatedUser(payload);
                 
@@ -487,6 +608,18 @@ int main(){
 //                     printf("Ho inviato al client %s\n", buffer);
                     
                     bzero(buffer, sizeof(buffer));
+                    
+                    printf("libero i sem\n");
+                    
+                    // SET SEM TO LOCK RESURCES
+                    sop[0].sem_num=0;
+                    sop[0].sem_op=-1;
+                    sop[0].sem_flg = 0;
+                    if (semop(semid,sop,1)) {
+                        perror("semop");
+                        exit(1);
+                    }
+                    
                 }
                 
                 if (strcmp(operation, "listM") == 0){
@@ -494,6 +627,8 @@ int main(){
                     bzero(buffer, sizeof(buffer));
 
                     strcpy(buffer, printMessageList(shmidMESSAGE, payload, buffer));
+                    
+                    if (strcmp(buffer, "") == 0) strcpy(buffer, "No Message found!");
 
                     send(newSocket, buffer, strlen(buffer), 0);
                 }
@@ -504,6 +639,8 @@ int main(){
                     
                     strcpy(buffer, printTopicList(shmidTOPIC, payload, buffer));
                     
+                    if (strcmp(buffer, "") == 0) strcpy(buffer, "No Topic found!");
+                    
                     send(newSocket, buffer, strlen(buffer), 0);
                     
                 }
@@ -513,6 +650,8 @@ int main(){
                     bzero(buffer, sizeof(buffer));
 
                     strcpy(buffer, printThreadList(shmidTHREAD, buffer));
+                    
+                    if (strcmp(buffer, "") == 0) strcpy(buffer, "No Thread found!");
 
                     send(newSocket, buffer, strlen(buffer), 0);
                     
@@ -595,6 +734,48 @@ int main(){
                     }
                 }
                 
+                if (strcmp(operation, "addTopic") == 0){
+                    
+                    int i = 0;
+                    char* values = strtok(payload, ",");
+                    char threadName[50];
+                    char topicName[50];
+                    char username[50];
+                    
+                    bzero(buffer, sizeof(buffer));
+                    
+                    while (payload != NULL){
+                        
+                        if (i == 2) {
+                            strcpy(username, values);
+                            break;
+                        }
+                        if (i == 1) {
+                            strcpy(topicName, values);
+                            values = strtok(NULL, ",");
+                            i++;
+                        }
+                        if (i == 0){
+                            strcpy(threadName, values);
+                            values = strtok(NULL, ",");
+                            i++;
+                        }
+                    }
+                    
+                    printf("%s, %s, %s\n", threadName, topicName, username);
+                    
+                    int numTopic = addTopic(shmidTOPIC, threadName, topicName, username);
+                    
+                    if (numTopic > 0) {
+                       
+                        printNode(shmidTOPIC, "t");
+                        bzero(buffer, sizeof(buffer));
+                        strcpy(buffer, "ok");
+                        send(newSocket, buffer, strlen(buffer), 0);
+                        
+                    }
+                }
+                
                 if (strcmp(operation, "delThread") == 0){
                     
                     printf("richiesta ricevuta\n");
@@ -620,7 +801,7 @@ int main(){
                     
                     printf("chiamo la funzione elimina thread \n");
                     
-                    if (deleteThread(shmidTHREAD, threadName, username) >= 0){
+                    if (deleteThread(shmidTHREAD, shmidTOPIC, shmidMESSAGE, threadName, username) >= 0){
                         printf("sono tornato\n");
                         printNode(shmidTHREAD, "th");
                         strcpy(buffer, "ok");
