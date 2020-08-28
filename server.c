@@ -597,16 +597,17 @@ int main(){
                     printf("Cerco di autenticare...%s\n", payload);
                     
                     // SET SEM TO LOCK RESURCES
-                    printf("setto i sem\n");
-                    sop[0].sem_num=0;
-                    sop[0].sem_op=-1;
-                    sop[0].sem_flg=0;
+//                     printf("setto i sem\n");
+//                     sop[0].sem_num=0;
+//                     sop[0].sem_op=-1;
+//                     sop[0].sem_flg=0;
+//                     
+//                     if (semop(semid,sop,1) < 0) {
+//                         perror("semop");
+//                         exit(1);
+//                     }
+                    if (setSem(semid, 0) < 0) printf("ERROR during resources lock!");
                     
-                    if (semop(semid,sop,1) < 0) {
-                        perror("semop");
-                        exit(1);
-                    }
-                
                     int res = authenticatedUser(payload);
                 
                     if (res == 1) {
@@ -632,13 +633,14 @@ int main(){
                     printf("libero i sem\n");
                     
                     // SET SEM TO LOCK RESURCES
-                    sop[0].sem_num=0;
-                    sop[0].sem_op=1;
-                    sop[0].sem_flg = 0;
-                    if (semop(semid,sop,1)) {
-                        perror("semop");
-                        exit(1);
-                    }
+//                     sop[0].sem_num=0;
+//                     sop[0].sem_op=1;
+//                     sop[0].sem_flg = 0;
+//                     if (semop(semid,sop,1)) {
+//                         perror("semop");
+//                         exit(1);
+//                     }
+                    if (resetSem(semid, 0) < 0) printf("ERROR during resources lock!");
                     
                 }
                 
