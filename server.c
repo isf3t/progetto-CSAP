@@ -442,6 +442,26 @@ char* printThreadList(int shmid, char* buffer){
     
 }
 
+int sem_init(key_t key){
+    
+    int semid; 
+    
+    /* create a semaphore set with NSEMS semaphore: */         
+    if ((semid = semget(IPC_PRIVATE, 2, 0666 | IPC_CREAT)) < 0) {             
+        perror("semget");             
+        return -1;
+    }         
+    /* initialize all semaphore to 0: */   
+    if (semctl(semid, 0, SETVAL, 1) < 0 || semctl(semid, 1, SETVAL, 1) < 0) {             
+        perror("semctl");             
+        return -1;
+    } 
+    
+    printf("id sem: %d\n", semid);
+    
+    return semid;
+}
+
 int main(){
     
     key_t key_shm = ftok("users.txt", 'E'); 
@@ -580,9 +600,9 @@ int main(){
                     printf("setto i sem\n");
                     sop[0].sem_num=0;
                     sop[0].sem_op=-1;
-                    sop[0].sem_op=0;
+                    sop[0].sem_flg=0;
                     
-                    if (semop(semid,sop,1)) {
+                    if (semop(semid,sop,1) < 0) {
                         perror("semop");
                         exit(1);
                     }
@@ -613,7 +633,7 @@ int main(){
                     
                     // SET SEM TO LOCK RESURCES
                     sop[0].sem_num=0;
-                    sop[0].sem_op=-1;
+                    sop[0].sem_op=1;
                     sop[0].sem_flg = 0;
                     if (semop(semid,sop,1)) {
                         perror("semop");

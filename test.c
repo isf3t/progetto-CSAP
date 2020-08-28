@@ -37,7 +37,7 @@ int sem_init(key_t key){
     int semid; 
     
     /* create a semaphore set with NSEMS semaphore: */         
-    if ((semid = semget(key, 1, 0666 | IPC_CREAT)) == -1) {             
+    if ((semid = semget(IPC_PRIVATE, 1, 0666 | IPC_CREAT)) == -1) {             
         perror("semget");             
         return -1;
     }         
@@ -84,11 +84,17 @@ int main(){
     key_t key_shm = ftok("users.txt", 'E'); 
     
     int shmid;
-
+    
+    struct sembuf sop[1];
+    struct shmid_ds shmid_struct;
+    
+    memset( &sop[0], 0, sizeof( sop[0] ) );
+    memset( &shmid_struct, 0, sizeof( shmid_struct ) );
+    
     Thread* threads;
     
     int id = sem_init(key_shm);
-    printf("%d\n",id);
+    printf("id %d\n",id);
     
     // SHMEM INIT
     shmid = shmget(IPC_PRIVATE, 1 * sizeof(Thread), IPC_CREAT | 0666);
@@ -105,8 +111,28 @@ int main(){
     printf("messaggio %s, id %d\n", headTH->name, shmid);
     shmdt(headTH);
     
+    printf("setto i sem\n");
+                    sop[0].sem_num=0;
+                    sop[0].sem_op=-1;
+                    sop[0].sem_op=0;
+                    
+                    if (semop(id,sop,2)) {
+                        perror("semop");
+                        exit(1);
+                    }
+    
     addNode(shmid);
     
     printNode(shmid);
+    
+     printf("setto i sem\n");
+                    sop[0].sem_num=0;
+                    sop[0].sem_op=1;
+                    sop[0].sem_op=0;
+                    
+                    if (semop(id,sop,2)) {
+                        perror("semop");
+                        exit(1);
+                    }
     return 0;
 }
