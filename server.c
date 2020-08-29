@@ -9,6 +9,7 @@
 #include <sys/ipc.h>     
 #include <sys/sem.h>
 #include <sys/shm.h> 
+#include <signal.h>
 #include "utility.h"
 #include "data_structure.h"
 
@@ -18,6 +19,7 @@
 int shmidTOPIC;
 int shmidTHREAD;
 int shmidMESSAGE;
+int shmidUSER;
 
 // int deleteRelatedTopics(int shmid, char* topicName){
 //     return 0;
@@ -98,7 +100,24 @@ int deleteThread(int shmid, int shmidT, int shmidM, char* threadName, char* user
 
 char* printNode(int shmid, char* flag){
     
-    if(strcmp(flag, "m") == 0){
+    if(strcmp(flag, "u") == 0){
+        Users* head = (Users *) shmat(shmid, NULL, 0);
+    
+        do {
+            printf("sono nel ciclo\n");
+            printf("ecco l'utente corrente %s, loggato: %d\n", head->username, head->logged);
+            
+            if (head->next == -1) break;
+            
+            else {
+            
+                head = (Users *) shmat(head->next, NULL, 0);
+                
+            }
+            
+        } while(1);
+    }
+    else if(strcmp(flag, "m") == 0){
         Message* head = (Message *) shmat(shmid, NULL, 0);
     
         do {
@@ -470,6 +489,7 @@ int main(){
     Topic* topics;
     Thread* threads;
     Message* messages;
+    Users* users;
     
     // SHMEM INIT
     shmidTOPIC = shmget(IPC_PRIVATE, 1 * sizeof(Topic), IPC_CREAT | 0666);
@@ -507,9 +527,27 @@ int main(){
     strcpy(headM->body, "This is a test message to show you how it works!");
     shmdt(headM);
     
+    shmidUSER = shmget(IPC_PRIVATE, 1 * sizeof(Users), IPC_CREAT | 0666);
+    users = (Users *) shmat(shmidUSER, NULL, 0);
+    Users* headU = NULL;
+    shmidUSER = shmget(IPC_PRIVATE, 1 * sizeof(Users), IPC_CREAT | 0666);
+    headU = (Users *) shmat(shmidUSER, NULL, 0);
+    headU->next = -1;
+    headU->id = shmidUSER;
+    strcpy(headU->username, "admin");
+    headU->logged = 0;
+    shmdt(headU);
+    
     // INIT OF SYSV SEMAPHORE
     semid = sem_init_(key_sem);
     if (semid < 0) printf("Error creating semaphore set!\n");
+    
+    if (setSem(semid, 0) < 0) printf("ERROR during resources lock!\n");
+    
+    initUserList(shmidUSER);
+    printNode(shmidUSER, "u");
+    
+    if (resetSem(semid, 0) < 0) printf("ERROR during resources unlock!\n");
     
     // SERVER SOCKET INIT
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -551,10 +589,10 @@ int main(){
             recv(newSocket, buffer, 1024, 0);
             printf("sono nel processo figlio\n. Ho ricevuto: %s\n", buffer);
             
-            if(strcmp(buffer, ":exit") == 0){
- 					printf("Disconnected from %s:%d\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
- 					break;
-            }else{
+//             if(strcmp(buffer, ":exit") == 0){
+//  					printf("Disconnected from %s:%d\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
+//  					break;
+//             }else{
                 
                 int i = 0;
                 char* token = strtok(buffer, ":");
@@ -591,7 +629,7 @@ int main(){
 //                     }
                     if (setSem(semid, 0) < 0) printf("ERROR during resources lock!\n");
                     
-                    int res = authenticatedUser(payload);
+                    int res = authenticatedUser(payload, shmidUSER);
                 
                     if (res == 1) {
                         bzero(buffer, sizeof(buffer));
@@ -623,6 +661,21 @@ int main(){
 //                     }
                     if (resetSem(semid, 0) < 0) printf("ERROR during resources unlock!\n");
                     
+                }
+                
+                if (strcmp(operation, "logout") == 0){
+                    
+                    if (setSem(semid, 0) < 0) printf("ERROR during resources lock!\n");
+                    
+                    bzero(buffer, sizeof(buffer));
+                    
+                    if (logout(payload, shmidUSER) > 0) strcpy(buffer, "ok");
+                    
+                    else strcpy(buffer, "ko");
+                    
+                    if (resetSem(semid, 0) < 0) printf("ERROR during resources unlock!\n");
+                    
+                    send(newSocket, buffer, strlen(buffer), 0);
                 }
                 
                 if (strcmp(operation, "listM") == 0){
@@ -676,7 +729,7 @@ int main(){
                     
                     
                     int i = 0;
-                    char* values = strtok(payload, ",");
+                    char* values = strtok(payload, "~");
                     char body[140];
                     char topicName[50];
                     char username[50];
@@ -693,12 +746,12 @@ int main(){
                         }
                         if (i == 1) {
                             strcpy(body, values);
-                            values = strtok(NULL, ",");
+                            values = strtok(NULL, "~");
                             i++;
                         }
                         if (i == 0){
                             strcpy(topicName, values);
-                            values = strtok(NULL, ",");
+                            values = strtok(NULL, "~");
                             i++;
                         }
                     }
@@ -722,7 +775,7 @@ int main(){
                 if (strcmp(operation, "addThread") == 0){
                     
                     int i = 0;
-                    char* values = strtok(payload, ",");
+                    char* values = strtok(payload, "~");
                     char threadName[50];
                     char username[50];
                     
@@ -738,7 +791,7 @@ int main(){
                         }
                         if (i == 0){
                             strcpy(threadName, values);
-                            values = strtok(NULL, ",");
+                            values = strtok(NULL, "~");
                             i++;
                         }
                     }
@@ -760,7 +813,7 @@ int main(){
                 if (strcmp(operation, "addTopic") == 0){
                     
                     int i = 0;
-                    char* values = strtok(payload, ",");
+                    char* values = strtok(payload, "~");
                     char threadName[50];
                     char topicName[50];
                     char username[50];
@@ -777,12 +830,12 @@ int main(){
                         }
                         if (i == 1) {
                             strcpy(topicName, values);
-                            values = strtok(NULL, ",");
+                            values = strtok(NULL, "~");
                             i++;
                         }
                         if (i == 0){
                             strcpy(threadName, values);
-                            values = strtok(NULL, ",");
+                            values = strtok(NULL, "~");
                             i++;
                         }
                     }
@@ -807,7 +860,7 @@ int main(){
                     
                     printf("richiesta ricevuta\n");
                     int i = 0;
-                    char* values = strtok(payload, ",");
+                    char* values = strtok(payload, "~");
                     char threadName[50];
                     char username[50];
                     
@@ -823,7 +876,7 @@ int main(){
                         }
                         if (i == 0){
                             strcpy(threadName, values);
-                            values = strtok(NULL, ",");
+                            values = strtok(NULL, "~");
                             i++;
                         }
                     }
@@ -840,7 +893,7 @@ int main(){
                     }
                     if (resetSem(semid, 0) < 0) printf("ERROR during resources unlock!\n");
                 }
-            }
+            //}
 		}
 
 	}

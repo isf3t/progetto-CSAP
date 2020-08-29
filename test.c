@@ -12,7 +12,7 @@
 #include "utility.h"
 #include "data_structure.h"
 
-void printNode(int shmid){
+/*void printNode(int shmid){
     
     Thread* head = (Thread *) shmat(shmid, NULL, 0);
     
@@ -36,7 +36,7 @@ int sem_init(key_t key){
     
     int semid; 
     
-    /* create a semaphore set with NSEMS semaphore: */         
+       
     if ((semid = semget(IPC_PRIVATE, 1, 0666 | IPC_CREAT)) == -1) {             
         perror("semget");             
         return -1;
@@ -134,5 +134,14 @@ int main(){
                         perror("semop");
                         exit(1);
                     }
+    return 0;
+}
+*/
+
+int main(){
+    
+    char a = 126;
+    
+    printf("questo è il carattere: %c", a);
     return 0;
 }

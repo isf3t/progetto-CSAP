@@ -28,3 +28,12 @@ typedef struct Thread {
     int id;
     
 }Thread;
+
+typedef struct Users {
+
+    char username[20];
+    int logged;
+    int next;
+    int id;
+    
+}Users;

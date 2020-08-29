@@ -6,35 +6,173 @@
 #include <sys/ipc.h>
 #include <sys/shm.h> 
 #include "utility.h"
+#include "data_structure.h"
 
 #define MAXCHAR 1000
 #define NSEMS 1
 
-int authenticatedUser(char* buffer) {
-    FILE *fp;
-    char str[MAXCHAR];
-    char* filename = "users.txt";
+void initUserList(int shmid){
+
+    char username[50];
+    
+    printf("Insert username to add new user list. Insert exit to stop process!\n");
+    
+    do {
+        
+        printf("Insert username: \n");
+        scanf("%s", &username[0]);
+        printf("\n\n");
+        
+        if (strcmp(username, "exit") == 0 || strcmp(username, "Exit") == 0 || strcmp(username, "e") == 0) break;
+        
+        else {
+            
+            Users* head = (Users *) shmat(shmid, NULL, 0);
+    
+            do {
+                
+                if (head->next == -1) {
+                    
+                    shmid = shmget(IPC_PRIVATE, 1 * sizeof(Message), IPC_CREAT | 0666);
+                    
+                    if (shmid < 0) exit(0);
+                    
+                    else{
+                        Users* new = (Users *) shmat(shmid, NULL, 0);
+                        
+                        if (new == (void*)-1) exit(0);
+                        
+                        else{
+                            strcpy(new->username, username);
+                            new->logged = 0;
+                            new->next = -1;
+                            new->id = shmid;
+                            head->next = shmid;
+                            shmdt(new);
+                            break;
+                        }
+                    }            
+                }
+                
+                else {
+
+                    head = (Users *) shmat(head->next, NULL, 0);
+                    
+                }
+                
+            } while(1);
+            
+        }
+        
+    } while(1);
+}
+
+// int authenticatedUser(char* buffer {
+//     FILE *fp;
+//     char str[MAXCHAR];
+//     char* filename = "users.txt";
+//     int found = 0;
+//     int authenticated = '1';
+//  
+//     fp = fopen(filename, "r");
+//     if (fp == NULL){
+//         printf("Could not open file %s\n",filename);
+//         exit(1);
+//     }
+//     while (fgets(str, MAXCHAR, fp) != NULL){
+//         printf("Username nel file: %s, username arrivato: %s\n", strtok(str, "\n"), buffer);
+//         if (strncmp(str, buffer, strlen(buffer)) == 0) {
+//             if (strchr(str, authenticated) == NULL){
+//                 found = 1;
+//                 break;
+//             }
+//             else found = 2;
+//         }
+//     }
+//     fclose(fp);
+//     
+//     return found;
+// }
+
+int authenticatedUser(char* username, int shmid){
+
     int found = 0;
-    int authenticated = '1';
- 
-    fp = fopen(filename, "r");
-    if (fp == NULL){
-        printf("Could not open file %s\n",filename);
-        exit(1);
+    
+    Users* head = (Users *) shmat(shmid, NULL, 0);
+
+    if (head == NULL) {
+        return found;
     }
-    while (fgets(str, MAXCHAR, fp) != NULL){
-        printf("Username nel file: %s, username arrivato: %s\n", strtok(str, "\n"), buffer);
-        if (strncmp(str, buffer, strlen(buffer)) == 0) {
-            if (strchr(str, authenticated) == NULL){
+    
+    do {
+        if (strcmp(head->username, username) == 0){
+
+            if (head->logged == 0) {
+            
+                head->logged = 1;
                 found = 1;
+                
+            }
+                else found = 2;
+            
+        }
+        
+        if (head->next == -1) {
                 break;
             }
-            else found = 2;
+        
+        else {
+            head = (Users *) shmat(head->next, NULL, 0);
+            
         }
-    }
-    fclose(fp);
+        
+    } while(1);
     
+    shmdt(head);
+
     return found;
+    
+}
+
+int logout(char* username, int shmid){
+
+    int found = 0;
+    
+    Users* head = (Users *) shmat(shmid, NULL, 0);
+
+    if (head == NULL) {
+        return found;
+    }
+    
+    do {
+        if (strcmp(head->username, username) == 0){
+
+            if (head->logged == 0) {
+            
+                found = -1;
+                
+            }
+            else {
+                head->logged = 0;
+                found = 1;
+            }
+        }
+        
+        if (head->next == -1) {
+                break;
+            }
+        
+        else {
+            head = (Users *) shmat(head->next, NULL, 0);
+            
+        }
+        
+    } while(1);
+    
+    shmdt(head);
+
+    return found;
+    
 }
 
 int sem_init_(key_t key){

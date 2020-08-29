@@ -12,8 +12,34 @@ struct sockaddr_in serverAddr;
 char buffer[1024];
 char threadName[50];
 char topicName[50];
+char username[20];
 
 #define PORT 4444
+
+void logout(char* username){
+    
+    bzero(buffer, sizeof(buffer));
+    
+    strcpy(buffer,"logout:");
+    strcat(buffer, username);
+    strcat(buffer, "\0");
+    printf("stringa concatenata %s\n", buffer);
+    
+    send(clientSocket, buffer, strlen(buffer), 0);
+        
+    bzero(buffer, sizeof(buffer));
+        
+    int res = recv(clientSocket, buffer, 1024, 0);
+        
+    if (res <0){
+        printf("Error comunicating with server\n");
+        exit(1);
+    }
+    
+    if (strcmp(buffer, "ok") == 0) printf("You are now logged out correctly!\n");
+    
+    else if (strcmp(buffer, "ko") == 0) printf("Some error occured or inserted user not logged in! Retry...\n");
+}
 
 void deleteThread(char* threadName){
     char username[50];
@@ -25,7 +51,7 @@ void deleteThread(char* threadName){
     
     strcpy(buffer,"delThread:");
     strcat(buffer, threadName);
-    strcat(buffer, ",");
+    strcat(buffer, "~");
     strcat(buffer, username);
     strcat(buffer, "\0");
     printf("stringa concatenata %s\n", buffer);
@@ -55,7 +81,7 @@ void addThread(char* threadName){
     
     strcpy(buffer,"addThread:");
     strcat(buffer, threadName);
-    strcat(buffer, ",");
+    strcat(buffer, "~");
     strcat(buffer, username);
     strcat(buffer, "\0");
     printf("stringa concatenata %s\n", buffer);
@@ -86,9 +112,9 @@ void addTopic(char* threadName, char* topicName){
     
     strcpy(buffer,"addTopic:");
     strcat(buffer, threadName);
-    strcat(buffer, ",");
+    strcat(buffer, "~");
     strcat(buffer, topicName);
-    strcat(buffer, ",");
+    strcat(buffer, "~");
     strcat(buffer, username);
     strcat(buffer, "\0");
     printf("stringa concatenata %s\n", buffer);
@@ -119,9 +145,9 @@ void reply(char* messageBody){
     
     strcpy(buffer,"replyTO:");
     strcat(buffer, topicName);
-    strcat(buffer, ",");
+    strcat(buffer, "~");
     strcat(buffer, messageBody);
-    strcat(buffer, ",");
+    strcat(buffer, "~");
     strcat(buffer, username);
     strcat(buffer, "\0");
     printf("stringa concatenata %s\n", buffer);
@@ -366,6 +392,14 @@ int main(int argc, char* argv[]){
             }
         }
         
+        if (strcmp(cmd, "logout") == 0){
+            if (argv[2] == NULL) printf("\nUSAGE: ./main logout [username]\n");
+            else{
+                strcpy(username, argv[2]);
+                serviceToCall = 9;
+            }
+        }
+        
     }
     
 //     printf("service to call %d\n", serviceToCall);
@@ -395,6 +429,9 @@ int main(int argc, char* argv[]){
             break;
         case 8:
             if (connectToServer() > 0) addTopic(threadName, topicName);
+            break;
+        case 9:
+            if (connectToServer() > 0) logout(username);
             break;
     }  
     
