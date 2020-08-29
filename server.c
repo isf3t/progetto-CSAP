@@ -160,6 +160,8 @@ int addTopic(int shmid, char* threadName, char* topicName, char* username){
     Topic* head = (Topic *) shmat(shmid, NULL, 0);
     int numTopic = 0;
     
+    printf("threadname e topicname: %s, %s\n", threadName, topicName);
+    
     do {
         
         numTopic++;
@@ -442,26 +444,6 @@ char* printThreadList(int shmid, char* buffer){
     
 }
 
-int sem_init(key_t key){
-    
-    int semid; 
-    
-    /* create a semaphore set with NSEMS semaphore: */         
-    if ((semid = semget(IPC_PRIVATE, 2, 0666 | IPC_CREAT)) < 0) {             
-        perror("semget");             
-        return -1;
-    }         
-    /* initialize all semaphore to 0: */   
-    if (semctl(semid, 0, SETVAL, 1) < 0 || semctl(semid, 1, SETVAL, 1) < 0) {             
-        perror("semctl");             
-        return -1;
-    } 
-    
-    printf("id sem: %d\n", semid);
-    
-    return semid;
-}
-
 int main(){
     
     key_t key_shm = ftok("users.txt", 'E'); 
@@ -526,7 +508,8 @@ int main(){
     shmdt(headM);
     
     // INIT OF SYSV SEMAPHORE
-    if (semid = sem_init(key_sem) < 0) printf("Error creating semaphore set!\n");
+    semid = sem_init_(key_sem);
+    if (semid < 0) printf("Error creating semaphore set!\n");
     
     // SERVER SOCKET INIT
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -606,7 +589,7 @@ int main(){
 //                         perror("semop");
 //                         exit(1);
 //                     }
-                    if (setSem(semid, 0) < 0) printf("ERROR during resources lock!");
+                    if (setSem(semid, 0) < 0) printf("ERROR during resources lock!\n");
                     
                     int res = authenticatedUser(payload);
                 
@@ -630,8 +613,6 @@ int main(){
                     
                     bzero(buffer, sizeof(buffer));
                     
-                    printf("libero i sem\n");
-                    
                     // SET SEM TO LOCK RESURCES
 //                     sop[0].sem_num=0;
 //                     sop[0].sem_op=1;
@@ -640,22 +621,28 @@ int main(){
 //                         perror("semop");
 //                         exit(1);
 //                     }
-                    if (resetSem(semid, 0) < 0) printf("ERROR during resources lock!");
+                    if (resetSem(semid, 0) < 0) printf("ERROR during resources unlock!\n");
                     
                 }
                 
                 if (strcmp(operation, "listM") == 0){
+                    
+                    if (setSem(semid, 0) < 0) printf("ERROR during resources lock!\n");
                     
                     bzero(buffer, sizeof(buffer));
 
                     strcpy(buffer, printMessageList(shmidMESSAGE, payload, buffer));
                     
                     if (strcmp(buffer, "") == 0) strcpy(buffer, "No Message found!");
-
+                    
+                    if (resetSem(semid, 0) < 0) printf("ERROR during resources unlock!\n");
+                    
                     send(newSocket, buffer, strlen(buffer), 0);
                 }
                 
                 if (strcmp(operation, "listT") == 0){
+                    
+                    if (setSem(semid, 0) < 0) printf("ERROR during resources lock!\n");
                     
                     bzero(buffer, sizeof(buffer));
                     
@@ -663,17 +650,23 @@ int main(){
                     
                     if (strcmp(buffer, "") == 0) strcpy(buffer, "No Topic found!");
                     
+                    if (resetSem(semid, 0) < 0) printf("ERROR during resources unlock!\n");
+                    
                     send(newSocket, buffer, strlen(buffer), 0);
                     
                 }
                 
                 if (strcmp(operation, "listTH") == 0){
+                    
+                    if (setSem(semid, 0) < 0) printf("ERROR during resources lock!\n");
 
                     bzero(buffer, sizeof(buffer));
 
                     strcpy(buffer, printThreadList(shmidTHREAD, buffer));
                     
                     if (strcmp(buffer, "") == 0) strcpy(buffer, "No Thread found!");
+                    
+                    if (resetSem(semid, 0) < 0) printf("ERROR during resources unlock!\n");
 
                     send(newSocket, buffer, strlen(buffer), 0);
                     
@@ -687,6 +680,8 @@ int main(){
                     char body[140];
                     char topicName[50];
                     char username[50];
+                    
+                    if (setSem(semid, 0) < 0) printf("ERROR during resources lock!\n");
                     
                     bzero(buffer, sizeof(buffer));
                     
@@ -719,6 +714,8 @@ int main(){
                         
                     }
                     
+                    if (resetSem(semid, 0) < 0) printf("ERROR during resources unlock!\n");
+                    
                     else printf("Error replying to message!\n");
                 }
                 
@@ -728,6 +725,8 @@ int main(){
                     char* values = strtok(payload, ",");
                     char threadName[50];
                     char username[50];
+                    
+                    if (setSem(semid, 0) < 0) printf("ERROR during resources lock!\n");
                     
                     bzero(buffer, sizeof(buffer));
                     
@@ -754,6 +753,8 @@ int main(){
                         send(newSocket, buffer, strlen(buffer), 0);
                         
                     }
+                    
+                    if (resetSem(semid, 0) < 0) printf("ERROR during resources unlock!\n");
                 }
                 
                 if (strcmp(operation, "addTopic") == 0){
@@ -763,6 +764,8 @@ int main(){
                     char threadName[50];
                     char topicName[50];
                     char username[50];
+                    
+                    if (setSem(semid, 0) < 0) printf("ERROR during resources lock!\n");
                     
                     bzero(buffer, sizeof(buffer));
                     
@@ -796,6 +799,8 @@ int main(){
                         send(newSocket, buffer, strlen(buffer), 0);
                         
                     }
+                    
+                    if (resetSem(semid, 0) < 0) printf("ERROR during resources unlock!\n");
                 }
                 
                 if (strcmp(operation, "delThread") == 0){
@@ -805,6 +810,8 @@ int main(){
                     char* values = strtok(payload, ",");
                     char threadName[50];
                     char username[50];
+                    
+                    if (setSem(semid, 0) < 0) printf("ERROR during resources lock!\n");
                     
                     bzero(buffer, sizeof(buffer));
                     
@@ -831,6 +838,7 @@ int main(){
                     
                         
                     }
+                    if (resetSem(semid, 0) < 0) printf("ERROR during resources unlock!\n");
                 }
             }
 		}

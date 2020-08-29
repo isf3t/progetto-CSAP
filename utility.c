@@ -27,8 +27,6 @@ int authenticatedUser(char* buffer) {
     char* filename = "users.txt";
     int found = 0;
     int authenticated = '1';
-    
-    printf("setto i semafori\n");
  
     fp = fopen(filename, "r");
     if (fp == NULL){
@@ -55,24 +53,26 @@ int sem_init_(key_t key){
     int semid; 
     
     /* create a semaphore set with NSEMS semaphore: */         
-    if ((semid = semget(IPC_PRIVATE, 2, 0666 | IPC_CREAT)) < 0) {             
+    if ((semid = semget(IPC_PRIVATE, 1, 0666 | IPC_CREAT)) < 0) {             
         perror("semget");             
         return -1;
     }         
     /* initialize all semaphore to 0: */   
-    if (semctl(semid, 0, SETVAL, 1) < 0 || semctl(semid, 1, SETVAL, 1) < 0) {             
+    if (semctl(semid, 0, SETVAL, 1) < 0) {             
         perror("semctl");             
         return -1;
     } 
     
-    printf("id sem: %d\n", semid);
+    printf("id sem nella funzione: %d\n", semid);
     
     return semid;
 }
 
 int setSem(int semid, int sem_num){
     
-    struct sembuf sop[1];
+    printf("setto semaforo: %d, con id: %d\n", sem_num, semid);
+    
+    struct sembuf sop[2];
     
     sop[0].sem_num=sem_num;
 	sop[0].sem_op=-1;
@@ -88,7 +88,9 @@ int setSem(int semid, int sem_num){
 
 int resetSem(int semid, int sem_num){
     
-    struct sembuf sop[1];
+    printf("resetto semaforo: %d, con id: %d\n", sem_num, semid);
+    
+    struct sembuf sop[2];
     
     sop[0].sem_num=sem_num;
 	sop[0].sem_op=1;

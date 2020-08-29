@@ -27,6 +27,7 @@ void deleteThread(char* threadName){
     strcat(buffer, threadName);
     strcat(buffer, ",");
     strcat(buffer, username);
+    strcat(buffer, "\0");
     printf("stringa concatenata %s\n", buffer);
     
     send(clientSocket, buffer, strlen(buffer), 0);
@@ -56,6 +57,7 @@ void addThread(char* threadName){
     strcat(buffer, threadName);
     strcat(buffer, ",");
     strcat(buffer, username);
+    strcat(buffer, "\0");
     printf("stringa concatenata %s\n", buffer);
     
     send(clientSocket, buffer, strlen(buffer), 0);
@@ -88,6 +90,7 @@ void addTopic(char* threadName, char* topicName){
     strcat(buffer, topicName);
     strcat(buffer, ",");
     strcat(buffer, username);
+    strcat(buffer, "\0");
     printf("stringa concatenata %s\n", buffer);
     
     send(clientSocket, buffer, strlen(buffer), 0);
@@ -120,6 +123,7 @@ void reply(char* messageBody){
     strcat(buffer, messageBody);
     strcat(buffer, ",");
     strcat(buffer, username);
+    strcat(buffer, "\0");
     printf("stringa concatenata %s\n", buffer);
     
     send(clientSocket, buffer, strlen(buffer), 0);
@@ -147,6 +151,7 @@ void list(char* service){
         bzero(buffer, sizeof(buffer));
         strcpy(buffer,"listM:");
         strcat(buffer, topicName);
+        strcat(buffer, "\0");
         printf("stringa concatenata %s\n", buffer);
         
         send(clientSocket, buffer, strlen(buffer), 0);
@@ -168,6 +173,7 @@ void list(char* service){
         // create a message to server in form "listM:threadname,topicname,message"
         strcpy(buffer,"listT:");
         strcat(buffer, threadName);
+        strcat(buffer, "\0");
         printf("stringa concatenata %s\n", buffer);
         
         send(clientSocket, buffer, strlen(buffer), 0);
@@ -190,6 +196,7 @@ void list(char* service){
         
         // create a message to server in form "listM:threadname,topicname,message"
         strcpy(buffer,"listTH:");
+        strcat(buffer, "\0");
         send(clientSocket, buffer, strlen(buffer), 0);
         
         bzero(buffer, sizeof(buffer));
