@@ -10,17 +10,6 @@
 #define MAXCHAR 1000
 #define NSEMS 1
 
-char* split(char* buf, char delim[]){
-    
-    printf("sono in split: %s", buf);
-    int init_size = strlen(buf);
-
-	char *ptr = strtok(buf, delim);
-    
-    return ptr;
-    
-}
-
 int authenticatedUser(char* buffer) {
     FILE *fp;
     char str[MAXCHAR];

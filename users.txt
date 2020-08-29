@@ -1,4 +1,4 @@
-pippo 1
-pluto 0
-paperino 0
-isfet 0
+pippo l
+pluto nl
+paperino nl
+isfet nl

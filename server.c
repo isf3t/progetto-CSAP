@@ -351,12 +351,11 @@ char* printTopicList(int shmid, char* threadName, char* buffer){
         strcpy(buffer, "Nessun Topic Trovato!\n");
         return buffer;
     }
-    
-    bzero(buffer, sizeof(buffer));
 
     do {
         if (strcmp(head->upperThread, threadName) == 0){
-
+            
+            printf("ho trovato il topic: %s con %s\n", head->upperThread, threadName);
             strcat(buffer, "\n");
             strcat(buffer, "Related To Thread: \n");
             strcat(buffer, head->upperThread);
@@ -364,9 +363,10 @@ char* printTopicList(int shmid, char* threadName, char* buffer){
             strcat(buffer, "Topic Name: \n");
             strcat(buffer, head->name);
             strcat(buffer, "\n\n");
+            
         }
         
-        else if(head->next == -1) break;
+        if(head->next == -1) break;
         
         else {
         
@@ -374,7 +374,7 @@ char* printTopicList(int shmid, char* threadName, char* buffer){
             
         }
         
-    } while(head->next != -1);
+    } while(1);
     
     shmdt(head);
     
