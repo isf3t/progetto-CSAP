@@ -230,3 +230,94 @@ int resetSem(int semid, int sem_num){
 
     return 0;
 }
+
+int containsNode(int shmid, char* flag, char* toFind){
+ 
+    int found = 0;
+    
+    if(strcmp(flag, "u") == 0){
+        Users* head = (Users *) shmat(shmid, NULL, 0);
+    
+        do {
+            
+            if (strcmp(head->username, toFind) ==0) {
+                found = 1;
+                break;
+            }
+            
+            if (head->next == -1) break;
+            
+            else {
+            
+                head = (Users *) shmat(head->next, NULL, 0);
+                
+            }
+            
+        } while(1);
+    }
+    else if(strcmp(flag, "m") == 0){
+        Message* head = (Message *) shmat(shmid, NULL, 0);
+    
+        do {
+            
+            if (strcmp(head->body, toFind) ==0) {
+                found = 1;
+                break;
+            }
+            
+            if (head->next == -1) break;
+            
+            else {
+            
+                head = (Message *) shmat(head->next, NULL, 0);
+                
+            }
+            
+        } while(1);
+    }
+    
+    else if (strcmp(flag, "th") == 0){
+        printf("sono nei trhread\n");
+        Thread* head = (Thread *) shmat(shmid, NULL, 0);
+    
+        do {
+            
+            if (strcmp(head->name, toFind) ==0) {
+                found = 1;
+                break;
+            }
+            
+            if (head->next == -1) break;
+            
+            else {
+            
+                head = (Thread *) shmat(head->next, NULL, 0);
+                
+            }
+            
+        } while(1);
+    }
+    else{
+    
+        Topic* head = (Topic *) shmat(shmid, NULL, 0);
+    
+        do {
+            
+            if (strcmp(head->name, toFind) ==0) {
+                found = 1;
+                break;
+            }
+            
+            if (head->next == -1) break;
+            
+            else {
+            
+                head = (Topic *) shmat(head->next, NULL, 0);
+                
+            }
+            
+        } while(1);
+        
+    }
+    
+}

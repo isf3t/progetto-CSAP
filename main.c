@@ -16,6 +16,28 @@ char username[20];
 
 #define PORT 4444
 
+void shutdownServer(){
+    
+    strcpy(buffer,"shutdown:");
+    strcat(buffer, "\0");
+    printf("stringa concatenata %s\n", buffer);
+    
+    send(clientSocket, buffer, strlen(buffer), 0);
+        
+    bzero(buffer, sizeof(buffer));
+        
+    int res = recv(clientSocket, buffer, 1024, 0);
+        
+    if (res <0){
+        printf("Error comunicating with server\n");
+        exit(1);
+    }
+    
+    if (strcmp(buffer, "ok") == 0) printf("Server shutted down correctly\n");
+    else printf("An error occured. Retry...\n");
+    
+}
+
 void logout(char* username){
     
     bzero(buffer, sizeof(buffer));
@@ -98,6 +120,8 @@ void addThread(char* threadName){
     }
     
     if (strcmp(buffer, "ok") == 0) printf("Thread created correctly!\n");
+    else printf("Error adding new thread or this thread already exist!\n");
+
     
 }
 
@@ -132,6 +156,8 @@ void addTopic(char* threadName, char* topicName){
     
     if (strcmp(buffer, "ok") == 0) printf("Thread created correctly!\n");
     
+    else printf("Error adding new topic or this topic already exist!\n");
+    
 }
 
 void reply(char* messageBody){
@@ -164,7 +190,8 @@ void reply(char* messageBody){
     }
     
     if (strcmp(buffer, "ok") == 0) printf("Message replied correctly!\n");
-    
+    else printf("Error adding new message or this message already exist!\n");
+
 }
 
 void list(char* service){
@@ -400,6 +427,10 @@ int main(int argc, char* argv[]){
             }
         }
         
+        if (strcmp(cmd, "shutdown") == 0){
+            serviceToCall = 10;
+        }
+        
     }
     
 //     printf("service to call %d\n", serviceToCall);
@@ -432,6 +463,9 @@ int main(int argc, char* argv[]){
             break;
         case 9:
             if (connectToServer() > 0) logout(username);
+            break;
+        case 10:
+            if (connectToServer() > 0) shutdownServer();
             break;
     }  
     

@@ -9,3 +9,4 @@ int setSem(int semid, int sem_num);
 int resetSem(int semid, int sem_num);
 void initUserList(int shmid);
 int logout(char* username, int shmid);
+int containsNode(int shmid, char* flag, char* toFind);

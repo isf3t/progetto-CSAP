@@ -181,44 +181,53 @@ int addTopic(int shmid, char* threadName, char* topicName, char* username){
     
     printf("threadname e topicname: %s, %s\n", threadName, topicName);
     
-    do {
-        
-        numTopic++;
-        printf("sono nel ciclo\n");
-        
-        if (head->next == -1) {
-            printf("aggiungo un nodo\n");
-            shmid = shmget(IPC_PRIVATE, 1 * sizeof(Topic), IPC_CREAT | 0666);
+    if (containsNode(shmid, "t", topicName) == 0) {
+        numTopic = -1;
+        printf("already exist\n");
+        return numTopic;
+    }
+    
+    else {
+    
+        do {
             
-            if (shmid < 0) return -1;
+            numTopic++;
+            printf("sono nel ciclo\n");
             
-            else{
-                Topic* new = (Topic *) shmat(shmid, NULL, 0);
+            if (head->next == -1) {
+                printf("aggiungo un nodo\n");
+                shmid = shmget(IPC_PRIVATE, 1 * sizeof(Topic), IPC_CREAT | 0666);
                 
-                if (new == (void*)-1) return -1;
+                if (shmid < 0) return -1;
                 
                 else{
-                    strcpy(new->name, topicName);
-                    strcpy(new->owner, username);
-                    strcpy(new->upperThread, threadName);
-                    new->next = -1;
-                    new->id = shmid;
-                    head->next = shmid;
-                    shmdt(new);
-                    numTopic++;
-                    break;
-                }
-            }            
-        }
-        
-        else {
+                    Topic* new = (Topic *) shmat(shmid, NULL, 0);
+                    
+                    if (new == (void*)-1) return -1;
+                    
+                    else{
+                        strcpy(new->name, topicName);
+                        strcpy(new->owner, username);
+                        strcpy(new->upperThread, threadName);
+                        new->next = -1;
+                        new->id = shmid;
+                        head->next = shmid;
+                        shmdt(new);
+                        numTopic++;
+                        break;
+                    }
+                }            
+            }
             
-            printf("else scorro la lista\n");
-            head = (Topic *) shmat(head->next, NULL, 0);
+            else {
+                
+                printf("else scorro la lista\n");
+                head = (Topic *) shmat(head->next, NULL, 0);
+                
+            }
             
-        }
-        
-    } while(1);
+        } while(1);
+    }
     
     printf("\n\n");
     shmdt(head);
@@ -230,42 +239,51 @@ int addThread(int shmid, char* threadName, char* username){
     Thread* head = (Thread *) shmat(shmid, NULL, 0);
     int numThread = 0;
     
-    do {
+    if (containsNode(shmid, "th", threadName) == 0) {
+        numThread = -1;
+        printf("already exist\n");
+        return numThread;
+    }
+    
+    else {
         
-        numThread++;
-        printf("sono nel ciclo\n");
-        if (head->next == -1) {
-            printf("aggiungo un nodo\n");
-            shmid = shmget(IPC_PRIVATE, 1 * sizeof(Thread), IPC_CREAT | 0666);
+        do {
             
-            if (shmid < 0) return -1;
-            
-            else{
-                Thread* new = (Thread *) shmat(shmid, NULL, 0);
+            numThread++;
+            printf("sono nel ciclo\n");
+            if (head->next == -1) {
+                printf("aggiungo un nodo\n");
+                shmid = shmget(IPC_PRIVATE, 1 * sizeof(Thread), IPC_CREAT | 0666);
                 
-                if (new == (void*)-1) return -1;
+                if (shmid < 0) return -1;
                 
                 else{
-                    strcpy(new->name, threadName);
-                    strcpy(new->owner, username);
-                    new->next = -1;
-                    new->id = shmid;
-                    head->next = shmid;
-                    shmdt(new);
-                    numThread++;
-                    break;
-                }
-            }            
-        }
-        
-        else {
+                    Thread* new = (Thread *) shmat(shmid, NULL, 0);
+                    
+                    if (new == (void*)-1) return -1;
+                    
+                    else{
+                        strcpy(new->name, threadName);
+                        strcpy(new->owner, username);
+                        new->next = -1;
+                        new->id = shmid;
+                        head->next = shmid;
+                        shmdt(new);
+                        numThread++;
+                        break;
+                    }
+                }            
+            }
             
-            printf("else scorro la lista\n");
-            head = (Thread *) shmat(head->next, NULL, 0);
+            else {
+                
+                printf("else scorro la lista\n");
+                head = (Thread *) shmat(head->next, NULL, 0);
+                
+            }
             
-        }
-        
-    } while(1);
+        } while(1);
+    }
     
     printf("\n\n");
     shmdt(head);
@@ -277,43 +295,52 @@ int addMessage(int shmid, char* topicName, char* body, char* username){
     Message* head = (Message *) shmat(shmid, NULL, 0);
     int numMess = 0;
     
-    do {
-        
-        numMess++;
-        printf("sono nel ciclo\n");
-        if (head->next == -1) {
-            printf("aggiungo un nodo\n");
-            shmid = shmget(IPC_PRIVATE, 1 * sizeof(Message), IPC_CREAT | 0666);
+    if (containsNode(shmid, "m", body) == 0) {
+        numMess = -1;
+        printf("already exist\n");
+        return numMess;
+    }
+    
+    else {
+    
+        do {
             
-            if (shmid < 0) return -1;
-            
-            else{
-                Message* new = (Message *) shmat(shmid, NULL, 0);
+            numMess++;
+            printf("sono nel ciclo\n");
+            if (head->next == -1) {
+                printf("aggiungo un nodo\n");
+                shmid = shmget(IPC_PRIVATE, 1 * sizeof(Message), IPC_CREAT | 0666);
                 
-                if (new == (void*)-1) return -1;
+                if (shmid < 0) return -1;
                 
                 else{
-                    strcpy(new->upperTopic, topicName);
-                    strcpy(new->body, body);
-                    strcpy(new->src, username);
-                    new->next = -1;
-                    new->id = shmid;
-                    head->next = shmid;
-                    shmdt(new);
-                    numMess++;
-                    break;
-                }
-            }            
-        }
-        
-        else {
+                    Message* new = (Message *) shmat(shmid, NULL, 0);
+                    
+                    if (new == (void*)-1) return -1;
+                    
+                    else{
+                        strcpy(new->upperTopic, topicName);
+                        strcpy(new->body, body);
+                        strcpy(new->src, username);
+                        new->next = -1;
+                        new->id = shmid;
+                        head->next = shmid;
+                        shmdt(new);
+                        numMess++;
+                        break;
+                    }
+                }            
+            }
             
-            printf("else scorro la lista\n");
-            head = (Message *) shmat(head->next, NULL, 0);
+            else {
+                
+                printf("else scorro la lista\n");
+                head = (Message *) shmat(head->next, NULL, 0);
+                
+            }
             
-        }
-        
-    } while(1);
+        } while(1);
+    }
     
     printf("\n\n");
     shmdt(head);
@@ -463,6 +490,39 @@ char* printThreadList(int shmid, char* buffer){
     
 }
 
+int freeMem(int shmidTH, int shmidT, int shmidM, int shmidU, int semid){
+
+    // REMOVE SHARED MEMORY SEGMENT AND SEMAPHORE
+    if (semctl(semid,0,IPC_RMID) < 0) {
+        perror("semctl");
+        return -1;
+    }
+    if (shmctl(shmidU,IPC_RMID,NULL) < 0) {
+        perror("semctl");
+        return -1;
+    }
+    
+    if (shmctl(shmidM,IPC_RMID,NULL) < 0){
+        perror("semctl");
+        return -1;
+    }
+    if (shmctl(shmidT,IPC_RMID,NULL) < 0) {
+        perror("semctl");
+        return -1;
+    }
+    
+    if (shmctl(shmidTH,IPC_RMID,NULL) < 0) {
+        perror("semctl");
+        return -1;
+    }
+}
+
+void hardCloseHandler(){
+
+    printf("Run command 'shutdown' on client side!\n");
+    
+}
+
 int main(){
     
     key_t key_shm = ftok("users.txt", 'E'); 
@@ -482,6 +542,8 @@ int main(){
     struct sembuf sop[1];
     struct shmid_ds shmid_struct;
     int semid;
+    
+//     signal(SIGINT, hardCloseHandler);
     
     memset( &sop[0], 0, sizeof( sop[0] ) );
     memset( &shmid_struct, 0, sizeof( shmid_struct ) );
@@ -678,6 +740,21 @@ int main(){
                     send(newSocket, buffer, strlen(buffer), 0);
                 }
                 
+                if (strcmp(operation, "shutdown") == 0){
+                    
+                    if (freeMem(shmidTHREAD, shmidTOPIC, shmidMESSAGE, shmidUSER, semid) > 0) {
+                        
+                        strcpy(buffer, "ok");
+                        send(newSocket, buffer, strlen(buffer), 0);
+                        break;
+                        
+                    }
+                    
+                    else strcpy(buffer, "ko");
+                    
+                    send(newSocket, buffer, strlen(buffer), 0);
+                }
+                
                 if (strcmp(operation, "listM") == 0){
                     
                     if (setSem(semid, 0) < 0) printf("ERROR during resources lock!\n");
@@ -767,6 +844,14 @@ int main(){
                         
                     }
                     
+                    else {
+                    
+                        bzero(buffer, sizeof(buffer));
+                        strcpy(buffer, "ko");
+                        send(newSocket, buffer, strlen(buffer), 0);
+                        
+                    }
+                    
                     if (resetSem(semid, 0) < 0) printf("ERROR during resources unlock!\n");
                     
                     else printf("Error replying to message!\n");
@@ -803,6 +888,14 @@ int main(){
                         printNode(shmidTHREAD, "th");
                         bzero(buffer, sizeof(buffer));
                         strcpy(buffer, "ok");
+                        send(newSocket, buffer, strlen(buffer), 0);
+                        
+                    }
+                    
+                    else {
+                    
+                        bzero(buffer, sizeof(buffer));
+                        strcpy(buffer, "ko");
                         send(newSocket, buffer, strlen(buffer), 0);
                         
                     }
@@ -849,6 +942,14 @@ int main(){
                         printNode(shmidTOPIC, "t");
                         bzero(buffer, sizeof(buffer));
                         strcpy(buffer, "ok");
+                        send(newSocket, buffer, strlen(buffer), 0);
+                        
+                    }
+                    
+                    else {
+                    
+                        bzero(buffer, sizeof(buffer));
+                        strcpy(buffer, "ko");
                         send(newSocket, buffer, strlen(buffer), 0);
                         
                     }
