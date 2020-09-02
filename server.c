@@ -607,7 +607,6 @@ int main(){
     if (setSem(semid, 0) < 0) printf("ERROR during resources lock!\n");
     
     initUserList(shmidUSER);
-    printNode(shmidUSER, "u");
     
     if (resetSem(semid, 0) < 0) printf("ERROR during resources unlock!\n");
     

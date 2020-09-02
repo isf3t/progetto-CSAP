@@ -25,6 +25,8 @@ void initUserList(int shmid){
         
         if (strcmp(username, "exit") == 0 || strcmp(username, "Exit") == 0 || strcmp(username, "e") == 0) break;
         
+        else if (containsNode(shmid, "u", username) == 0) printf("User already exist!\n");
+        
         else {
             
             Users* head = (Users *) shmat(shmid, NULL, 0);

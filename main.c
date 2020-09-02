@@ -76,7 +76,6 @@ void deleteThread(char* threadName){
     strcat(buffer, "~");
     strcat(buffer, username);
     strcat(buffer, "\0");
-    printf("stringa concatenata %s\n", buffer);
     
     send(clientSocket, buffer, strlen(buffer), 0);
         
@@ -106,7 +105,6 @@ void addThread(char* threadName){
     strcat(buffer, "~");
     strcat(buffer, username);
     strcat(buffer, "\0");
-    printf("stringa concatenata %s\n", buffer);
     
     send(clientSocket, buffer, strlen(buffer), 0);
         
@@ -141,7 +139,6 @@ void addTopic(char* threadName, char* topicName){
     strcat(buffer, "~");
     strcat(buffer, username);
     strcat(buffer, "\0");
-    printf("stringa concatenata %s\n", buffer);
     
     send(clientSocket, buffer, strlen(buffer), 0);
         
@@ -176,7 +173,6 @@ void reply(char* messageBody){
     strcat(buffer, "~");
     strcat(buffer, username);
     strcat(buffer, "\0");
-    printf("stringa concatenata %s\n", buffer);
     
     send(clientSocket, buffer, strlen(buffer), 0);
         
@@ -205,7 +201,6 @@ void list(char* service){
         strcpy(buffer,"listM:");
         strcat(buffer, topicName);
         strcat(buffer, "\0");
-        printf("stringa concatenata %s\n", buffer);
         
         send(clientSocket, buffer, strlen(buffer), 0);
         
@@ -227,7 +222,6 @@ void list(char* service){
         strcpy(buffer,"listT:");
         strcat(buffer, threadName);
         strcat(buffer, "\0");
-        printf("stringa concatenata %s\n", buffer);
         
         send(clientSocket, buffer, strlen(buffer), 0);
         
@@ -352,19 +346,18 @@ int main(int argc, char* argv[]){
     char messageBody[140];
 //     printf("argv1 %d, argv2 %d, argv3 %d, argv4 %d, \n", argv[1], argv[2], argv[3], argv[4]);
     
-    if (argv[1] == NULL) printf("\nUSAGE: {authenticate | list [ threads | topics|  messages ] | get [message#] | status [message#] | create [topic] | append [topic -> thread] | delete [topic]}\n");
+    if (argv[1] == NULL) printf("\nUSAGE: {authenticate | list [ threads | topics|  messages ] | create [thread] | addTopic [topic -> thread] | delete [thread] | reply [topic name + body (max 140)]}\n");
     else{
         if (strcmp(cmd, "authenticate") == 0) serviceToCall = 1;
         if (strcmp(cmd, "list") == 0) {
-            if (argv[2] == NULL) printf("\nUSAGE: ./main list [ threads | topics (thread name + topic name)|  messages (thread name + topic name)]\n");
+            if (argv[2] == NULL) printf("\nUSAGE: ./main list [ threads | topics [thread name]|  messages [topic name]\n");
             else if(strcmp(argv[2], "messages") == 0) {
-                if (argv[3] != NULL && argv[4] != NULL){
+                if (argv[3] != NULL && argc >= 3){
                     serviceToCall = 2;
-                    strcpy(threadName, argv[3]);
-                    strcpy(topicName, argv[4]);
+                    strcpy(topicName, argv[3]);
                 }
                 else{
-                    printf("\nUSAGE: ./main list messages (thread name + topic name)]\n");
+                    printf("\nUSAGE: ./main list messages [topic name]\n");
                 }
             }
             else if (strcmp(argv[2], "topics") == 0) {
@@ -411,7 +404,7 @@ int main(int argc, char* argv[]){
         }
         
         if (strcmp(cmd, "addTopic") == 0){
-            if (argv[2] == NULL) printf("\nUSAGE: ./main addTopic [thread name + topic name]\n");
+            if (argv[2] == NULL || argv[3] == NULL && argc < 4) printf("\nUSAGE: ./main addTopic [thread name + topic name]\n");
             else{
                 strcpy(threadName, argv[2]);
                 strcpy(topicName, argv[3]);
